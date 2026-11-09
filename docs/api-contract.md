@@ -1,0 +1,258 @@
+# API contract
+
+## Status
+
+This contract is fixed for the assignment. The backend must implement these eight operations without changing their paths, request headers, or success response field names. Examples use UTC timestamps in RFC 3339 form.
+
+Base URL:
+
+```text
+http://localhost:8080
+```
+
+## Common conventions
+
+- `Content-Type: application/json` is required for JSON request bodies.
+- `X-Student-Id` is required exactly where an operation below specifies it. Its value is an opaque student registration identifier.
+- IDs are opaque strings. Example prefixes such as `c_` and `h_` are illustrative.
+- All timestamps are UTC and use an explicit `Z` suffix or equivalent offset.
+- Expected failures use `application/problem+json` with an RFC 7807-style object:
+
+```json
+{
+  "type": "https://example.invalid/problems/no-seats",
+  "title": "No seats available",
+  "status": 409,
+  "detail": "Class 6 - Morning Shift has no available seats.",
+  "instance": "/classes/c_123/holds",
+  "code": "NO_SEATS_AVAILABLE",
+  "traceId": "00-example"
+}
+```
+
+Validation failures may additionally include an `errors` object keyed by request field. Error details must be understandable to the frontend and must not expose stack traces or secrets.
+
+## 1. Create a class
+
+### Request
+
+```http
+POST /classes
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Class 6 - Morning Shift",
+  "totalSeats": 120
+}
+```
+
+### Success: `201 Created`
+
+```json
+{
+  "id": "c_123",
+  "name": "Class 6 - Morning Shift",
+  "totalSeats": 120
+}
+```
+
+### Expected errors
+
+- `400 Bad Request`: missing/blank name or non-positive/non-integral `totalSeats`.
+
+## 2. List classes
+
+### Request
+
+```http
+GET /classes
+```
+
+### Success: `200 OK`
+
+```json
+[
+  {
+    "id": "c_123",
+    "name": "Class 6 - Morning Shift",
+    "totalSeats": 120,
+    "heldSeats": 15,
+    "confirmedSeats": 80,
+    "availableSeats": 25
+  }
+]
+```
+
+An empty database returns `[]`. `availableSeats` is derived as `totalSeats - heldSeats - confirmedSeats`.
+
+## 3. Get a class
+
+### Request
+
+```http
+GET /classes/{classId}
+```
+
+### Success: `200 OK`
+
+Returns the same object shape as one item in `GET /classes`:
+
+```json
+{
+  "id": "c_123",
+  "name": "Class 6 - Morning Shift",
+  "totalSeats": 120,
+  "heldSeats": 15,
+  "confirmedSeats": 80,
+  "availableSeats": 25
+}
+```
+
+### Expected errors
+
+- `404 Not Found`: no class exists for `classId`.
+
+## 4. Hold a seat
+
+### Request
+
+```http
+POST /classes/{classId}/holds
+X-Student-Id: 20152691234567890
+```
+
+No request body is required.
+
+### Success: `201 Created`
+
+```json
+{
+  "holdId": "h_789",
+  "classId": "c_123",
+  "studentId": "20152691234567890",
+  "status": "HELD",
+  "expiresAt": "2026-11-01T04:10:00Z"
+}
+```
+
+The default hold duration is 600 seconds and is configurable with `HOLD_DURATION_SECONDS`.
+
+### Expected errors
+
+- `400 Bad Request`: missing or invalid `X-Student-Id`.
+- `404 Not Found`: no class exists for `classId`.
+- `409 Conflict`: no seats are available or the student already has an active application for this class.
+
+## 5. Get a hold
+
+### Request
+
+```http
+GET /holds/{holdId}
+```
+
+The supplied contract does not require `X-Student-Id` for this read operation.
+
+### Success: `200 OK`
+
+```json
+{
+  "holdId": "h_789",
+  "classId": "c_123",
+  "status": "HELD",
+  "expiresAt": "2026-11-01T04:10:00Z"
+}
+```
+
+The possible `status` values are `HELD`, `CONFIRMED`, `EXPIRED`, and `CANCELLED`. A due hold may be returned as `EXPIRED` after reconciliation; the expiration worker also reconciles it asynchronously.
+
+### Expected errors
+
+- `404 Not Found`: no hold exists for `holdId`.
+
+## 6. Confirm admission
+
+### Request
+
+```http
+POST /holds/{holdId}/confirm
+X-Student-Id: 20152691234567890
+```
+
+No request body is required. This simulates successful admission-fee confirmation.
+
+### Success: `200 OK`
+
+```json
+{
+  "holdId": "h_789",
+  "status": "CONFIRMED"
+}
+```
+
+The operation is idempotent for the owning student and an already `CONFIRMED` hold: repeated requests return the same result and do not increase `confirmedSeats` again.
+
+### Expected errors
+
+- `400 Bad Request`: missing or invalid `X-Student-Id`.
+- `403 Forbidden`: the hold belongs to a different student.
+- `404 Not Found`: no hold exists for `holdId`.
+- `409 Conflict`: the hold is expired, cancelled, or otherwise cannot be confirmed.
+
+## 7. Cancel a hold
+
+### Request
+
+```http
+DELETE /holds/{holdId}
+X-Student-Id: 20152691234567890
+```
+
+### Success: `204 No Content`
+
+The application remains in history with status `CANCELLED`. Repeating cancellation for the owning student is idempotent and also returns `204`.
+
+### Expected errors
+
+- `400 Bad Request`: missing or invalid `X-Student-Id`.
+- `403 Forbidden`: the hold belongs to a different student.
+- `404 Not Found`: no hold exists for `holdId`.
+- `409 Conflict`: the hold is `EXPIRED` or `CONFIRMED` and cannot be cancelled through this contract.
+
+## 8. List the current student's applications
+
+### Request
+
+```http
+GET /me/holds
+X-Student-Id: 20152691234567890
+```
+
+### Success: `200 OK`
+
+```json
+[
+  {
+    "holdId": "h_789",
+    "classId": "c_123",
+    "className": "Class 6 - Morning Shift",
+    "status": "HELD",
+    "expiresAt": "2026-11-01T04:10:00Z"
+  }
+]
+```
+
+The response includes the student's previous `EXPIRED` and `CANCELLED` applications as well as current `HELD` and `CONFIRMED` applications. The API may reconcile due holds before returning the list. An identifier with no applications returns `[]`.
+
+### Expected errors
+
+- `400 Bad Request`: missing or invalid `X-Student-Id`.
+
+## Status and capacity rules
+
+- A class must never have `heldSeats + confirmedSeats > totalSeats`.
+- A hold cannot be confirmed after its UTC `expiresAt`.
+- Expired holds release their held seats exactly once.
+- All state-changing operations are serialized by the backend/database concurrency strategy; clients must not calculate or trust seat availability themselves.
