@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the planned architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, and database-only Compose service now exist. Admission workflows, frontend, full Docker deployment, and production test coverage remain future implementation stages.
+This is the planned architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, and class-management API now exist. Hold workflows, frontend, full Docker deployment, and production test coverage remain future implementation stages.
 
 ## Runtime boundaries
 
@@ -166,7 +166,7 @@ Migrations are applied incrementally. Do not delete or recreate the database as 
 ## Testing strategy
 
 - Domain/unit tests: validation, legal status transitions, duration handling, and idempotent confirmation.
-- API integration tests: all eight operations, headers, response shapes, problem details, not-found cases, and persistence.
+- API integration tests: implemented class operations, response shapes, problem details, malformed/not-found cases, and persistence; the remaining hold operations will be added in later milestones.
 - PostgreSQL-backed concurrency tests: simultaneous holds at capacity, simultaneous duplicate applications, competing confirmation/expiry, repeated confirmation, and cancellation races. These must use real PostgreSQL behavior rather than an in-memory provider.
 - Restart/persistence test: create application data, restart the database/API containers, and verify the data remains available through the API.
 - Frontend component/integration tests: class creation/listing, student identifier persistence, hold countdown, automatic status updates, confirmation, cancellation, history, loading, and API errors using Vitest and React Testing Library.

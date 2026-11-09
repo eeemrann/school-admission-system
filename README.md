@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository currently contains the foundation documentation, an initial backend skeleton, and the PostgreSQL persistence foundation. Admission business logic, the frontend, Docker images, the full Compose application, and the complete automated test suite have not yet been implemented.
+Development is in progress. This repository currently contains the foundation documentation, an initial backend skeleton, the PostgreSQL persistence foundation, and the first class-management API endpoints. Hold workflows, the frontend, Docker images, the full Compose application, and the complete automated test suite have not yet been implemented.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -71,7 +71,7 @@ npm run build --prefix frontend
 npm run test --prefix frontend -- --run
 ```
 
-The frontend commands are planned for a later implementation stage. The current backend test project includes PostgreSQL-backed persistence tests; concurrency and HTTP workflow tests will be added with the admission services.
+The frontend commands are planned for a later implementation stage. The current backend test project includes PostgreSQL-backed persistence tests and HTTP integration tests for class management; hold workflow and concurrency tests will be added with the admission services.
 
 ## Repository layout
 
@@ -94,11 +94,12 @@ AI_USAGE.md               AI-assisted development record
 | --- | --- |
 | Foundation documentation | Complete for the current phase |
 | Backend solution/skeleton | Complete |
-| Backend admission API/business logic | Not started |
+| Class management API | Complete for the current milestone |
+| Hold/admission API/business logic | Not started |
 | Frontend UI | Not started |
 | PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
 | Docker Compose database service | Complete; full application stack not started |
-| Automated tests | PostgreSQL persistence foundation complete; full suite not started |
+| Automated tests | Persistence and class API coverage complete; hold/concurrency suite not started |
 | CI/CD workflows | Not started |
 
 Do not treat the current repository as a complete runnable application until the outstanding admission, frontend, Docker image, and CI work is complete and verified.
