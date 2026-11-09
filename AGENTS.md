@@ -79,4 +79,4 @@ All state transitions that affect seat counters must use the agreed transactiona
 
 ## Current project phase
 
-The repository is currently in the backend-skeleton phase. The API skeleton may build and expose its health/Swagger endpoints, but do not claim that the complete application is runnable or implemented until the admission backend, frontend, database migrations, Docker Compose stack, and required automated tests exist and have been verified.
+The repository is currently in the backend-persistence-foundation phase. The API skeleton, EF Core model/migration, PostgreSQL readiness endpoint, database-only Compose service, and persistence tests exist. Do not claim that the complete application is runnable or implemented until the admission backend workflows, frontend, API/frontend Dockerfiles, full Docker Compose stack, CI, and required automated concurrency/HTTP tests exist and have been verified.

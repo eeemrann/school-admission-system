@@ -21,6 +21,9 @@ indent_style = space
 indent_size = 2
 tab_width = 2
 
+[**/Migrations/*.cs]
+dotnet_diagnostic.CA1861.severity = none
+
 [*.{yml,yaml}]
 indent_style = space
 indent_size = 2

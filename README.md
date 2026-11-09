@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository currently contains the project foundation documentation and an initial backend skeleton. Admission business logic, database persistence, frontend, Docker images, database migrations, and the complete automated test suite have not yet been implemented.
+Development is in progress. This repository currently contains the foundation documentation, an initial backend skeleton, and the PostgreSQL persistence foundation. Admission business logic, the frontend, Docker images, the full Compose application, and the complete automated test suite have not yet been implemented.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -33,7 +33,17 @@ Docker-internal names such as `api` and `db` are used only for container-to-cont
 
 ## Planned local startup
 
-After implementation is complete and reviewed, the intended single-command startup will be:
+The current persistence milestone can be started and verified with:
+
+```bash
+docker compose up -d db
+dotnet tool restore
+dotnet ef database update \
+  --project backend/src/SchoolAdmission.Infrastructure/SchoolAdmission.Infrastructure.csproj \
+  --startup-project backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj
+```
+
+After the remaining implementation is complete and reviewed, the intended single-command startup will be:
 
 ```bash
 docker compose up --build
@@ -45,7 +55,7 @@ PostgreSQL will use a named volume mounted at `postgres_data:/var/lib/postgresql
 
 The planned defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`.
 
-This command is not runnable yet because Docker Compose, Dockerfiles, PostgreSQL configuration, and the frontend have intentionally not been created yet.
+The full command is not runnable yet because the API and frontend Dockerfiles, admission workflows, and frontend have intentionally not been created yet. The current Compose file contains the PostgreSQL 18 service only.
 
 ## Planned verification
 
@@ -53,6 +63,7 @@ The intended checks after implementation are:
 
 ```bash
 docker compose config
+dotnet restore backend/SchoolAdmission.sln
 dotnet build backend/SchoolAdmission.sln
 dotnet test backend/SchoolAdmission.sln
 npm ci --prefix frontend
@@ -60,7 +71,7 @@ npm run build --prefix frontend
 npm run test --prefix frontend -- --run
 ```
 
-The exact solution and package-script paths will be recorded when those projects are created. PostgreSQL-backed integration and concurrency tests must run in CI and in the documented local workflow.
+The frontend commands are planned for a later implementation stage. The current backend test project includes PostgreSQL-backed persistence tests; concurrency and HTTP workflow tests will be added with the admission services.
 
 ## Repository layout
 
@@ -85,9 +96,9 @@ AI_USAGE.md               AI-assisted development record
 | Backend solution/skeleton | Complete |
 | Backend admission API/business logic | Not started |
 | Frontend UI | Not started |
-| PostgreSQL schema/migrations | Not started |
-| Docker Compose stack | Not started |
-| Automated tests | Not started |
+| PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
+| Docker Compose database service | Complete; full application stack not started |
+| Automated tests | PostgreSQL persistence foundation complete; full suite not started |
 | CI/CD workflows | Not started |
 
-Do not treat the current repository as a runnable application until the outstanding implementation work is complete and verified.
+Do not treat the current repository as a complete runnable application until the outstanding admission, frontend, Docker image, and CI work is complete and verified.

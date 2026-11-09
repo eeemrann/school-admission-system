@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the planned architecture for the school admission system. The initial backend solution and health/Swagger skeleton now exist. Admission workflows, PostgreSQL persistence, Docker deployment, frontend, and production test coverage remain future implementation stages.
+This is the planned architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, and database-only Compose service now exist. Admission workflows, frontend, full Docker deployment, and production test coverage remain future implementation stages.
 
 ## Runtime boundaries
 
@@ -35,7 +35,7 @@ The backend should be organized as cleanly separated layers with dependencies po
 - API/presentation: route binding, header extraction, HTTP status mapping, problem details, and Swagger metadata.
 - Application: use cases for class creation/listing, hold creation/reading, confirmation, cancellation, and student application history.
 - Domain: class capacity invariants, application statuses, legal state transitions, and UTC time rules without HTTP or database concerns.
-- Infrastructure/persistence: EF Core DbContext, PostgreSQL mappings, migrations, constraints, transaction helpers, and repositories/adapters.
+- Infrastructure/persistence: EF Core DbContext, PostgreSQL mappings, migrations, constraints, transaction helpers, and repositories/adapters. The current persistence foundation uses `SchoolAdmissionDbContext` and migrations in the Infrastructure project.
 - Background processing: a hosted expiry worker with configured polling/batch limits and cancellation-aware execution.
 
 The public routes and success field names are fixed in [api-contract.md](api-contract.md). Internal names and boundaries may evolve without changing that contract.
@@ -54,10 +54,10 @@ The browser calls the host API URL `http://localhost:8080`. It must never use Do
 
 ## Planned data model
 
-The likely relational model contains:
+The current relational model contains:
 
-- `classes`: immutable public identity/name/capacity plus authoritative `held_seats` and `confirmed_seats` counters.
-- `applications` or `holds`: public hold identity, class foreign key, student ID, status, UTC `expires_at`, and audit timestamps.
+- `admission_classes`: immutable public identity/name/capacity plus authoritative `held_seats` and `confirmed_seats` counters.
+- `admission_holds`: public hold identity, class foreign key, student ID, uppercase status, UTC `expires_at`, and audit timestamps.
 
 PostgreSQL defenses will include foreign keys, non-negative counter checks, and a check equivalent to:
 
@@ -67,7 +67,7 @@ confirmed_seats >= 0
 held_seats + confirmed_seats <= total_seats
 ```
 
-A partial unique index on `(student_id, class_id)` for `HELD` and `CONFIRMED` rows will backstop duplicate active/confirmed applications. Historical `EXPIRED` and `CANCELLED` rows remain queryable. The exact schema and migration names will be finalized during implementation.
+A partial unique index on `(class_id, student_id)` for `HELD` and `CONFIRMED` rows backstops duplicate active/confirmed applications. Historical `EXPIRED` and `CANCELLED` rows remain queryable. The initial migration is `InitialCreate` in the Infrastructure project.
 
 ## Concurrency strategy
 
@@ -125,7 +125,43 @@ The final Compose stack will define:
 - `api`: the ASP.NET Core image, configured with the database connection and `HOLD_DURATION_SECONDS`, published on host port 8080;
 - `frontend`: the React/Vite production-serving image, configured with the browser-facing API URL `http://localhost:8080` and published on host port 5173.
 
-The API should wait for database readiness and apply reviewed migrations through the normal startup workflow. Secrets must be supplied through environment configuration and must not be committed. Dockerfiles, Compose, and service health checks are implementation work deferred from this foundation phase.
+The API should wait for database readiness and apply reviewed migrations through the normal startup workflow. Secrets must be supplied through environment configuration and must not be committed. API/frontend Dockerfiles and the full multi-service Compose stack are implementation work deferred from this foundation phase.
+
+The current Compose file contains only the `db` service for this persistence milestone. It uses PostgreSQL 18, a named `postgres_data` volume mounted at `/var/lib/postgresql`, and the standard host port 5432. If that host port is occupied locally, an untracked Compose override or an alternate local verification port may be used without changing the documented container port or committed defaults.
+
+## Database migration workflow
+
+The repository pins the local `dotnet-ef` tool to EF Core 10.0.14 in `.config/dotnet-tools.json`. Restore it before using migration commands:
+
+```bash
+dotnet tool restore
+```
+
+With PostgreSQL running and `ConnectionStrings__DefaultConnection` set to a safe local connection string, list or apply migrations:
+
+```bash
+dotnet ef migrations list \
+  --project backend/src/SchoolAdmission.Infrastructure/SchoolAdmission.Infrastructure.csproj \
+  --startup-project backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj \
+  --context SchoolAdmission.Infrastructure.Persistence.SchoolAdmissionDbContext
+
+dotnet ef database update \
+  --project backend/src/SchoolAdmission.Infrastructure/SchoolAdmission.Infrastructure.csproj \
+  --startup-project backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj \
+  --context SchoolAdmission.Infrastructure.Persistence.SchoolAdmissionDbContext
+```
+
+To add a future migration, use an intentional name and the same project/context boundaries:
+
+```bash
+dotnet ef migrations add <MigrationName> \
+  --project backend/src/SchoolAdmission.Infrastructure/SchoolAdmission.Infrastructure.csproj \
+  --startup-project backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj \
+  --context SchoolAdmission.Infrastructure.Persistence.SchoolAdmissionDbContext \
+  --output-dir Persistence/Migrations
+```
+
+Migrations are applied incrementally. Do not delete or recreate the database as part of normal development, and inspect generated migration SQL/operations before applying schema changes.
 
 ## Testing strategy
 
