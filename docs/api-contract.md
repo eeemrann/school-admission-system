@@ -253,6 +253,27 @@ The response includes the student's previous `EXPIRED` and `CANCELLED` applicati
 ## Status and capacity rules
 
 - A class must never have `heldSeats + confirmedSeats > totalSeats`.
-- A hold cannot be confirmed after its UTC `expiresAt`.
-- Expired holds release their held seats exactly once.
+- Hold creation reconciles due holds before checking available capacity.
+- A hold cannot be confirmed when `expiresAt <= currentUtcTime`.
+- Expired holds release their held seats exactly once, and seat counters must never become negative.
 - All state-changing operations are serialized by the backend/database concurrency strategy; clients must not calculate or trust seat availability themselves.
+
+## Error code catalogue
+
+The success responses, paths, headers, field names, and success status codes above are fixed. The following machine-readable error codes are a separate, non-success convention to make expected 4xx responses understandable to the frontend. They do not change the success contract.
+
+| Code | Status | Meaning |
+| --- | --- | --- |
+| `VALIDATION_ERROR` | 400 | Request body, path value, or header is invalid. |
+| `STUDENT_ID_REQUIRED` | 400 | A required `X-Student-Id` header is missing or blank. |
+| `CLASS_NOT_FOUND` | 404 | The requested class does not exist. |
+| `HOLD_NOT_FOUND` | 404 | The requested hold does not exist. |
+| `HOLD_OWNER_FORBIDDEN` | 403 | The requesting student does not own the hold. |
+| `NO_SEATS_AVAILABLE` | 409 | No seat is available after due holds are reconciled. |
+| `DUPLICATE_ACTIVE_APPLICATION` | 409 | The student already has a `HELD` or `CONFIRMED` application for the class. |
+| `HOLD_EXPIRED` | 409 | The hold has expired or `expiresAt <= currentUtcTime`. |
+| `HOLD_CANCELLED` | 409 | The hold has already been cancelled. |
+| `CONFIRMED_HOLD_CANNOT_CANCEL` | 409 | A confirmed admission cannot be cancelled through this contract. |
+| `INVALID_HOLD_STATE` | 409 | The requested state transition is not allowed. |
+
+The API may add a stable code for an additional documented business rule, but unexpected failures remain 500 responses and must not expose implementation details.

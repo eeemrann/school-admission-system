@@ -37,7 +37,7 @@ The implementation must preserve these invariants under concurrent requests:
 - Expired holds cannot be confirmed and release their held seat exactly once.
 - Application data survives container restarts through PostgreSQL persistence.
 
-All state transitions that affect seat counters must use the agreed transactional class-row locking strategy and must be covered by PostgreSQL-backed integration/concurrency tests.
+All state transitions that affect seat counters must use the agreed transactional class-row locking strategy and must be covered by PostgreSQL-backed integration/concurrency tests. Mutation paths must lock the class row before the application row. If a hold's class ID must first be discovered, perform a non-locking lookup, then lock the class and re-read/lock the hold. Expiry processing and normal API operations must use the same order.
 
 ## Validation and error handling
 

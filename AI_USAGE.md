@@ -1,30 +1,42 @@
 # AI usage record
 
-## Agent
+## Tools and responsibilities
 
-Codex is the AI coding agent used by the project owner to inspect, design, document, implement, and test this repository under owner direction. The owner remains responsible for reviewing decisions, changes, tests, and final acceptance.
+### ChatGPT
 
-## Initial intended use
+ChatGPT is used by the project owner for:
 
-Codex may be used to:
+- interpreting the assignment requirements;
+- architecture planning;
+- developing the engineering roadmap;
+- preparing prompts and task instructions for Codex;
+- technical review and engineering guidance.
 
-- inspect the existing repository and development environment before making changes;
-- propose and document a maintainable ASP.NET Core, React, PostgreSQL, and Docker architecture;
-- implement small, reviewable increments while preserving the fixed API contract;
-- write unit, integration, concurrency, and frontend tests;
-- review diffs, diagnose failures, and improve documentation and maintainability.
+### Codex
 
-Codex must not install tools without approval, add secrets, include the confidential assignment PDF, change Git remotes, commit or push automatically, claim unverified behavior, or silently resolve material business ambiguities.
+Codex is the local AI coding agent used under the project owner's direction for:
 
-## Initial activity record
+- local repository and development-environment inspection;
+- foundation documentation generation and correction;
+- planned future application implementation and testing.
+
+The project owner directs the process and reviews all changes, decisions, test results, and final acceptance.
+
+Neither tool may install tools without approval, add secrets, include the confidential assignment PDF, change Git remotes, commit or push automatically, claim unverified behavior, or silently resolve material business ambiguities.
+
+## Completed work
 
 Date: 2026-11-09
 
-- Inspected the repository root, branch, remote, and working-tree state.
-- Confirmed that the repository has no project files or commits yet.
-- Inspected the available .NET, Node, npm, Docker, and Docker Compose tooling.
-- Created only the foundation documentation and configuration requested for the current phase.
-- Did not install dependencies, create application code, create Dockerfiles, create CI workflows, modify remotes, commit, or push.
+- ChatGPT interpreted the assignment, planned the initial architecture and engineering roadmap, prepared Codex task instructions, and provided technical review/guidance.
+- Codex inspected the repository root, branch, remote, working-tree state, and available .NET, Node, npm, Docker, and Docker Compose tooling.
+- Codex generated the foundation documentation and configuration files requested for the foundation phase.
+- Codex reviewed and corrected the foundation documentation for expiry defaults, exact-once seat release, locking order, PostgreSQL 18 persistence, networking, error-code conventions, and AI disclosure.
+- No application source code, dependencies, Dockerfiles, CI workflows, commits, pushes, or remote changes were created.
+
+## Planned future work
+
+Future work is planned, not completed. Codex is planned to implement and test the backend, frontend, database migrations, Docker Compose services, concurrency controls, expiry worker, and CI workflows after project-owner approval. ChatGPT is planned to continue providing interpretation, architecture review, technical guidance, and review of Codex's implementation.
 
 ## Ongoing change log
 
@@ -38,4 +50,4 @@ Future development sessions should append concise entries describing:
 
 | Date | Scope | Verification | Owner corrections/decisions |
 | --- | --- | --- | --- |
-| 2026-11-09 | Foundation inspection and documentation | Repository/toolchain inspection completed | Business assumptions listed for approval |
+| 2026-11-09 | Foundation inspection, documentation, and documentation corrections | Repository/toolchain inspection and documentation audit completed | Approved expiry defaults and locking/persistence clarifications recorded |

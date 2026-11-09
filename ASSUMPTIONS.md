@@ -18,12 +18,16 @@ This document makes decisions explicit where the supplied requirements do not fu
 
 ## Hold duration and expiry
 
-- `HOLD_DURATION_SECONDS` is read from the backend environment and defaults to 600 seconds when absent.
-- The value must be a positive whole number and should be rejected at startup if it is invalid rather than silently producing unsafe behavior.
-- `expiresAt` is calculated using a UTC clock in the hold-creation transaction.
+- `HOLD_DURATION_SECONDS` is read from the backend environment and defaults to `600` seconds when absent.
+- `HOLD_EXPIRY_POLL_INTERVAL_SECONDS` defaults to `5` seconds.
+- `HOLD_EXPIRY_BATCH_SIZE` defaults to `100` holds per expiry pass.
+- Each of these configuration values must be a positive whole number and should be rejected at startup if invalid rather than silently producing unsafe behavior.
+- `expiresAt` is calculated using the current UTC clock in the hold-creation transaction. All timestamps in the system use UTC.
 - A hosted background expiry worker will periodically find due `HELD` applications, mark them `EXPIRED`, and release their seats in PostgreSQL transactions. The worker will run even when no user is interacting with the application.
 - API operations will also perform a due-expiry check as a safety net before making a seat decision. This prevents an expired hold from being confirmed while the worker is between runs.
-- Expiry is best-effort at the exact wall-clock boundary because a worker runs periodically, but confirmation must reject a hold as soon as its UTC `expiresAt` has passed. The status will be reconciled to `EXPIRED` by the worker or the next relevant API transaction.
+- Expiration must be reconciled exactly once as a state transition. A successful transition from `HELD` to `EXPIRED` releases that hold's seat once; retries must observe the changed status and must not release the seat again.
+- Hold creation must reconcile due holds for the class before checking available capacity.
+- Confirmation must reject a hold when `expiresAt <= currentUtcTime`, even if the background worker has not yet processed it. The status will be reconciled to `EXPIRED` by the worker or the next relevant API transaction.
 
 ## Duplicate applications
 
@@ -56,9 +60,12 @@ This document makes decisions explicit where the supplied requirements do not fu
 ## Concurrency and persistence
 
 - A class row is the serialization point for seat allocation and release. A transaction locks the class row before reading/updating seat counters and before changing related application state.
+- All mutation operations use one consistent database locking order: acquire the class row lock first, then acquire the application/hold row lock. Expiry processing and normal API operations follow this same order; no mutation path may acquire these locks in reverse order.
+- If a hold's class ID must first be discovered, use an initial non-locking lookup. Then lock the class row, re-read the hold by ID, and lock the hold row while still following the class-before-application order.
+- Hold creation reconciles due holds before checking capacity. Confirmation rejects `expiresAt <= currentUtcTime`. Each hold can release its seat once, and seat counters must never become negative.
 - Hold creation, confirmation, cancellation, and expiry release use the same locking discipline so that `heldSeats + confirmedSeats <= totalSeats` remains true under concurrent requests.
 - PostgreSQL check constraints, foreign keys, and partial unique indexes provide defense in depth. The database remains authoritative; counters are not trusted from the client.
-- PostgreSQL uses a named Docker volume so applications and application history survive container restarts. Container removal is not assumed to mean database deletion.
+- PostgreSQL 18 uses a named Docker volume mounted at `postgres_data:/var/lib/postgresql`, the official PostgreSQL 18 image mount path. The legacy `/var/lib/postgresql/data` mount is not used. Application data and history therefore survive container restarts; container removal is not assumed to mean database deletion.
 - All database timestamps are UTC.
 
 ## Contract ambiguities requiring approval
@@ -66,6 +73,5 @@ This document makes decisions explicit where the supplied requirements do not fu
 1. Whether the administrator should eventually require authentication, or remain intentionally open for the take-home UI.
 2. Whether a duplicate hold request should return `409` as proposed, or be idempotent and return the existing hold.
 3. Whether cancellation of an already cancelled hold should be idempotent as proposed.
-4. The desired expiry-worker polling interval and maximum batch size.
-5. Whether class names must be unique; the supplied contract does not require uniqueness, so the default is to allow duplicate names while IDs remain unique.
-6. Whether student IDs have a fixed format/length; the contract only supplies an example, so validation is limited to a safe non-empty identifier until the owner specifies a format.
+4. Whether class names must be unique; the supplied contract does not require uniqueness, so the default is to allow duplicate names while IDs remain unique.
+5. Whether student IDs have a fixed format/length; the contract only supplies an example, so validation is limited to a safe non-empty identifier until the owner specifies a format.

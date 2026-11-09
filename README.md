@@ -22,6 +22,15 @@ The frontend will communicate only with the REST API. The API will own validatio
 
 The public API is fixed and documented in [docs/api-contract.md](docs/api-contract.md). No authentication is required for this assignment; student identity is supplied by the `X-Student-Id` request header.
 
+## Planned local URLs
+
+| Service | Browser-facing URL | Purpose |
+| --- | --- | --- |
+| Frontend | `http://localhost:5173` | React administrator and student/parent UI |
+| Backend API | `http://localhost:8080` | REST API and Swagger/OpenAPI |
+
+Docker-internal names such as `api` and `db` are used only for container-to-container communication. A browser uses the published `localhost` URLs above.
+
 ## Planned local startup
 
 After implementation is complete and reviewed, the intended single-command startup will be:
@@ -31,6 +40,10 @@ docker compose up --build
 ```
 
 The API will be available at `http://localhost:8080`, with Swagger/OpenAPI exposed by the API service. The frontend will be available at `http://localhost:5173` unless the final Compose configuration documents a different port.
+
+PostgreSQL will use a named volume mounted at `postgres_data:/var/lib/postgresql`, so application data and application history survive container restarts. The legacy PostgreSQL data mount `/var/lib/postgresql/data` is not used for the planned PostgreSQL 18 service.
+
+The planned defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`.
 
 This command is not runnable yet because the application services and Dockerfiles have intentionally not been created in the foundation phase.
 

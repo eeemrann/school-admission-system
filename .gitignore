@@ -10,6 +10,8 @@ coverage/
 # Node and frontend build output
 node_modules/
 **/node_modules/
+dist/
+**/dist/
 frontend/dist/
 frontend/.vite/
 *.tsbuildinfo
@@ -26,11 +28,18 @@ Thumbs.db
 
 # Local environment and secrets
 .env
+.env.local
 .env.*
 !.env.example
 !.env.*.example
+secrets/
+**/secrets/
 *.secret
 *.secrets
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Local Docker artifacts and exported images
 docker-data/
