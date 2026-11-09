@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository currently contains the project foundation and architecture documentation only; the backend, frontend, Docker images, database migrations, and automated tests have not yet been implemented.
+Development is in progress. This repository currently contains the project foundation documentation and an initial backend skeleton. Admission business logic, database persistence, frontend, Docker images, database migrations, and the complete automated test suite have not yet been implemented.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -45,7 +45,7 @@ PostgreSQL will use a named volume mounted at `postgres_data:/var/lib/postgresql
 
 The planned defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`.
 
-This command is not runnable yet because the application services and Dockerfiles have intentionally not been created in the foundation phase.
+This command is not runnable yet because Docker Compose, Dockerfiles, PostgreSQL configuration, and the frontend have intentionally not been created yet.
 
 ## Planned verification
 
@@ -82,7 +82,8 @@ AI_USAGE.md               AI-assisted development record
 | Area | Status |
 | --- | --- |
 | Foundation documentation | Complete for the current phase |
-| Backend API | Not started |
+| Backend solution/skeleton | Complete |
+| Backend admission API/business logic | Not started |
 | Frontend UI | Not started |
 | PostgreSQL schema/migrations | Not started |
 | Docker Compose stack | Not started |

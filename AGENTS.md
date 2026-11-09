@@ -79,4 +79,4 @@ All state transitions that affect seat counters must use the agreed transactiona
 
 ## Current project phase
 
-The repository is currently in the foundation/documentation phase. Do not claim that the application is runnable or implemented until the backend, frontend, database migrations, Docker Compose stack, and automated tests exist and have been verified.
+The repository is currently in the backend-skeleton phase. The API skeleton may build and expose its health/Swagger endpoints, but do not claim that the complete application is runnable or implemented until the admission backend, frontend, database migrations, Docker Compose stack, and required automated tests exist and have been verified.

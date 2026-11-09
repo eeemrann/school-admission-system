@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the planned architecture for the school admission system. The implementation is intentionally not present yet; the foundation phase creates the design constraints that later code must satisfy.
+This is the planned architecture for the school admission system. The initial backend solution and health/Swagger skeleton now exist. Admission workflows, PostgreSQL persistence, Docker deployment, frontend, and production test coverage remain future implementation stages.
 
 ## Runtime boundaries
 
