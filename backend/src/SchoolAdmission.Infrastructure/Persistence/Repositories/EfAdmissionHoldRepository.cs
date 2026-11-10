@@ -339,6 +339,67 @@ public sealed class EfAdmissionHoldRepository(SchoolAdmissionDbContext dbContext
         return history;
     }
 
+    public async Task<int> ExpireDueBatchAsync(
+        DateTimeOffset currentUtcTime,
+        int batchSize,
+        CancellationToken cancellationToken)
+    {
+        if (batchSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(batchSize), batchSize, "Batch size must be positive.");
+        }
+
+        var candidateClassIds = await FindDueClassIdsAsync(
+            currentUtcTime,
+            batchSize,
+            cancellationToken);
+        var processedCount = 0;
+        var processedClassIds = new HashSet<Guid>();
+
+        foreach (var classId in candidateClassIds)
+        {
+            if (!processedClassIds.Add(classId))
+            {
+                continue;
+            }
+
+            var remainingBatchSize = batchSize - processedCount;
+            if (remainingBatchSize <= 0)
+            {
+                break;
+            }
+
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(
+                IsolationLevel.ReadCommitted,
+                cancellationToken);
+
+            var admissionClass = await LockClassAsync(classId, cancellationToken);
+            if (admissionClass is null)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                continue;
+            }
+
+            var dueHolds = await LockDueHoldsAsync(
+                classId,
+                currentUtcTime,
+                cancellationToken,
+                remainingBatchSize);
+            var transitionedCount = dueHolds.Count;
+            ExpireHolds(admissionClass, dueHolds);
+
+            if (transitionedCount > 0)
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            processedCount += transitionedCount;
+        }
+
+        return processedCount;
+    }
+
     private async Task<AdmissionClass?> LockClassAsync(
         Guid classId,
         CancellationToken cancellationToken)
@@ -370,8 +431,14 @@ public sealed class EfAdmissionHoldRepository(SchoolAdmissionDbContext dbContext
     private async Task<List<AdmissionHold>> LockDueHoldsAsync(
         Guid classId,
         DateTimeOffset currentUtcTime,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int maxCount = int.MaxValue)
     {
+        if (maxCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxCount), maxCount, "Maximum hold count must be positive.");
+        }
+
         await using var command = CreateCommand(
             """
             SELECT id
@@ -379,10 +446,13 @@ public sealed class EfAdmissionHoldRepository(SchoolAdmissionDbContext dbContext
             WHERE class_id = @class_id
               AND status = 'HELD'
               AND expires_at <= @current_utc_time
+            ORDER BY expires_at, id
+            LIMIT @batch_size
             FOR UPDATE
             """,
             ("class_id", classId),
-            ("current_utc_time", currentUtcTime));
+            ("current_utc_time", currentUtcTime),
+            ("batch_size", maxCount));
 
         var holdIds = new List<Guid>();
         await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
@@ -400,6 +470,21 @@ public sealed class EfAdmissionHoldRepository(SchoolAdmissionDbContext dbContext
 
         return await dbContext.AdmissionHolds
             .Where(hold => holdIds.Contains(hold.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<List<Guid>> FindDueClassIdsAsync(
+        DateTimeOffset currentUtcTime,
+        int batchSize,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.AdmissionHolds
+            .AsNoTracking()
+            .Where(hold => hold.Status == HoldStatus.Held && hold.ExpiresAt <= currentUtcTime)
+            .OrderBy(hold => hold.ExpiresAt)
+            .ThenBy(hold => hold.Id)
+            .Take(batchSize)
+            .Select(hold => hold.ClassId)
             .ToListAsync(cancellationToken);
     }
 

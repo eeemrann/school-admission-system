@@ -32,4 +32,9 @@ public interface IAdmissionHoldRepository
         string studentId,
         DateTimeOffset currentUtcTime,
         CancellationToken cancellationToken);
+
+    Task<int> ExpireDueBatchAsync(
+        DateTimeOffset currentUtcTime,
+        int batchSize,
+        CancellationToken cancellationToken);
 }

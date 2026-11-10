@@ -167,7 +167,7 @@ The supplied contract does not require `X-Student-Id` for this read operation.
 }
 ```
 
-The possible `status` values are `HELD`, `CONFIRMED`, `EXPIRED`, and `CANCELLED`. In the current implementation, a due `HELD` hold is reconciled during this request and returned as `EXPIRED`; the background expiration worker is planned but not implemented yet.
+The possible `status` values are `HELD`, `CONFIRMED`, `EXPIRED`, and `CANCELLED`. A due `HELD` hold is reconciled during this request and returned as `EXPIRED` when necessary. The hosted background expiry worker independently reconciles due holds between requests as a safety and cleanup mechanism.
 
 ### Expected errors
 

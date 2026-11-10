@@ -79,4 +79,4 @@ All state transitions that affect seat counters must use the agreed transactiona
 
 ## Current project phase
 
-The repository has completed the .NET backend foundation, PostgreSQL persistence, Class Management API, transactional seat reservation, confirmation and cancellation workflows, and student application history. The background expiry worker, React frontend, full Docker stack, CI/CD, and deployment remain pending. Do not claim that the complete application is runnable or implemented until those remaining components and their required automated tests have been verified.
+The repository has completed the .NET backend foundation, PostgreSQL persistence, Class Management API, transactional seat reservation, confirmation and cancellation workflows, student application history, and the background expiry worker. The React frontend, full Docker stack, CI/CD, and deployment remain pending. Do not claim that the complete application is runnable or implemented until those remaining components and their required automated tests have been verified.

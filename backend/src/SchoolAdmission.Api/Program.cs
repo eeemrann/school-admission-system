@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SchoolAdmission.Api.Health;
+using SchoolAdmission.Api.Workers;
 using SchoolAdmission.Application.Abstractions.Persistence;
 using SchoolAdmission.Application.Classes;
 using SchoolAdmission.Application.Reservations;
@@ -49,11 +50,18 @@ if (rawHoldDuration is not null
         "HOLD_DURATION_SECONDS must be a positive integer when specified.");
 }
 
+var holdExpiryConfiguration = HoldExpiryConfiguration.Parse(
+    builder.Configuration["HOLD_EXPIRY_POLL_INTERVAL_SECONDS"],
+    builder.Configuration["HOLD_EXPIRY_BATCH_SIZE"]);
+
 builder.Services.AddSingleton(new HoldConfiguration(holdDurationSeconds));
+builder.Services.AddSingleton(holdExpiryConfiguration);
 builder.Services.AddScoped<IClassManagementService, ClassManagementService>();
 builder.Services.AddScoped<IAdmissionClassRepository, EfAdmissionClassRepository>();
 builder.Services.AddScoped<IHoldReservationService, HoldReservationService>();
 builder.Services.AddScoped<IAdmissionHoldRepository, EfAdmissionHoldRepository>();
+builder.Services.AddScoped<IHoldExpiryService, HoldExpiryService>();
+builder.Services.AddHostedService<HoldExpiryWorker>();
 builder.Services.AddDbContext<SchoolAdmissionDbContext>(options =>
 {
     if (string.IsNullOrWhiteSpace(connectionString))

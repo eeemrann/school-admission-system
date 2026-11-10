@@ -23,7 +23,7 @@ This document makes decisions explicit where the supplied requirements do not fu
 - `HOLD_EXPIRY_BATCH_SIZE` defaults to `100` holds per expiry pass.
 - Each of these configuration values must be a positive whole number and should be rejected at startup if invalid rather than silently producing unsafe behavior.
 - `expiresAt` is calculated using the current UTC clock in the hold-creation transaction. All timestamps in the system use UTC.
-- A hosted background expiry worker will periodically find due `HELD` applications, mark them `EXPIRED`, and release their seats in PostgreSQL transactions. The worker will run even when no user is interacting with the application.
+- The hosted background expiry worker periodically finds due `HELD` applications, marks them `EXPIRED`, and releases their seats in PostgreSQL transactions. The worker runs even when no user is interacting with the application.
 - API operations will also perform a due-expiry check as a safety net before making a seat decision. This prevents an expired hold from being confirmed while the worker is between runs.
 - Expiration must be reconciled exactly once as a state transition. A successful transition from `HELD` to `EXPIRED` releases that hold's seat once; retries must observe the changed status and must not release the seat again.
 - Hold creation must reconcile due holds for the class before checking available capacity.

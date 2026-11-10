@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository currently contains the foundation documentation, an initial backend skeleton, the PostgreSQL persistence foundation, class-management endpoints, reservation endpoints, confirmation, cancellation, and student history. The background expiry worker, frontend, Docker images, full Compose application, and CI workflows have not yet been implemented.
+Development is in progress. This repository currently contains the foundation documentation, an initial backend skeleton, the PostgreSQL persistence foundation, class-management endpoints, reservation endpoints, confirmation, cancellation, student history, and the background expiry worker. The frontend, Docker images, full Compose application, and CI workflows have not yet been implemented.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -18,7 +18,7 @@ The repository will contain three runtime services:
 2. An ASP.NET Core API at `http://localhost:8080`.
 3. A Vite-served React frontend at the documented local frontend URL, planned as `http://localhost:5173`.
 
-The frontend will communicate only with the REST API. The API owns validation, application state transitions, expiry reconciliation, and seat allocation. The implemented reservation workflow reconciles due holds at request time; the background expiry worker is still planned. PostgreSQL enforces persistence and key invariants. See [docs/architecture.md](docs/architecture.md) and [ASSUMPTIONS.md](ASSUMPTIONS.md).
+The frontend will communicate only with the REST API. The API owns validation, application state transitions, expiry reconciliation, and seat allocation. Request-time reconciliation and the implemented hosted background expiry worker use the same class-first transaction strategy. PostgreSQL enforces persistence and key invariants. See [docs/architecture.md](docs/architecture.md) and [ASSUMPTIONS.md](ASSUMPTIONS.md).
 
 The public API is fixed and documented in [docs/api-contract.md](docs/api-contract.md). No authentication is required for this assignment; student identity is supplied by the `X-Student-Id` request header.
 
@@ -53,7 +53,7 @@ The API will be available at `http://localhost:8080`, with Swagger/OpenAPI expos
 
 PostgreSQL will use a named volume mounted at `postgres_data:/var/lib/postgresql`, so application data and application history survive container restarts. The legacy PostgreSQL data mount `/var/lib/postgresql/data` is not used for the planned PostgreSQL 18 service.
 
-The planned defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`.
+The implemented defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`. The expiry interval and batch size must be positive integers; invalid values fail API startup.
 
 The full command is not runnable yet because the API and frontend Dockerfiles, admission workflows, and frontend have intentionally not been created yet. The current Compose file contains the PostgreSQL 18 service only.
 
@@ -71,7 +71,7 @@ npm run build --prefix frontend
 npm run test --prefix frontend -- --run
 ```
 
-The frontend commands are planned for a later implementation stage. The current backend test project includes PostgreSQL-backed persistence tests and HTTP integration tests for class management, hold creation/read/reconciliation, confirmation, cancellation, student history, and concurrency behavior.
+The frontend commands are planned for a later implementation stage. The current backend test project includes 90 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, and concurrency tests. An opt-in stress test is documented below.
 
 ## Repository layout
 
@@ -97,11 +97,27 @@ AI_USAGE.md               AI-assisted development record
 | Class management API | Complete for the current milestone |
 | Hold creation/read API and request-time expiry reconciliation | Complete |
 | Confirmation, cancellation, and student history | Complete for milestone 5B |
-| Background expiry worker | Not started |
+| Background expiry worker | Complete for the current backend milestone |
 | Frontend UI | Not started |
 | PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
 | Docker Compose database service | Complete; full application stack not started |
-| Automated tests | 66 PostgreSQL-backed persistence and HTTP integration tests pass; frontend and worker coverage remains |
+| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend coverage remains |
 | CI/CD workflows | Not started |
 
-Do not treat the current repository as a complete runnable application until the outstanding admission, frontend, Docker image, and CI work is complete and verified.
+Do not treat the current repository as a complete runnable application until the outstanding frontend, Docker image, and CI work is complete and verified.
+
+## Background expiry worker
+
+The API hosts a `BackgroundService` that polls for overdue `HELD` applications even when no HTTP request is active. Each cycle discovers due class IDs without locking application rows, then processes each class in its own `ReadCommitted` PostgreSQL transaction: it locks the class row first, re-reads and locks due HELD applications, transitions only records still due, and decrements `heldSeats` once per successful transition. The configured batch limit bounds the number of applications transitioned per cycle, and a failure rolls back only the current class transaction while the worker retries on the next poll.
+
+The worker uses `HOLD_EXPIRY_POLL_INTERVAL_SECONDS` and `HOLD_EXPIRY_BATCH_SIZE` from environment configuration. It creates a dependency-injection scope per cycle, uses the registered UTC `TimeProvider`, logs structured operational events without student IDs, observes shutdown cancellation, and continues after transient processing failures. Multiple API instances remain safe because the class row is the serialization point.
+
+The opt-in PostgreSQL stress test is excluded from the default suite and can be run with:
+
+```bash
+dotnet test backend/SchoolAdmission.sln \
+  -p:DefineConstants=STRESS_TESTS \
+  --filter FullyQualifiedName~HoldStressTests
+```
+
+The verified run used one 120-seat class, 1,000 unique students, and 1,000 concurrent requests: 120 reservations succeeded, 880 returned `NO_SEATS_AVAILABLE`, and the final database state contained 120 HELD rows with `heldSeats=120` and `confirmedSeats=0`.

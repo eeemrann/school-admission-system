@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, and their PostgreSQL-backed integration/concurrency tests now exist. The background expiry worker, frontend, full Docker deployment, and CI remain future implementation stages.
+This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The frontend, full Docker deployment, and CI remain future implementation stages.
 
 ## Runtime boundaries
 
@@ -36,7 +36,7 @@ The backend should be organized as cleanly separated layers with dependencies po
 - Application: use cases for class creation/listing, hold creation/reading, confirmation, cancellation, and student application history.
 - Domain: class capacity invariants, application statuses, legal state transitions, and UTC time rules without HTTP or database concerns.
 - Infrastructure/persistence: EF Core DbContext, PostgreSQL mappings, migrations, constraints, transaction helpers, and repositories/adapters. The current persistence foundation uses `SchoolAdmissionDbContext` and migrations in the Infrastructure project.
-- Background processing: a hosted expiry worker with configured polling/batch limits and cancellation-aware execution.
+- Background processing: an implemented hosted expiry worker with configured polling/batch limits, scoped services, structured logging, transient-failure recovery, and cancellation-aware execution.
 
 The public routes and success field names are fixed in [api-contract.md](api-contract.md). Internal names and boundaries may evolve without changing that contract.
 
@@ -76,7 +76,7 @@ Seat-affecting operations will run in PostgreSQL transactions and lock the targe
 1. hold creation, which expires due holds for the class, checks duplicate active applications and capacity, and increments `held_seats`;
 2. confirmation, which expires/checks the target hold, moves one seat from held to confirmed, and changes status;
 3. cancellation, which releases one held seat and changes status;
-4. the future expiry worker, which releases due held seats and marks them expired.
+4. the hosted expiry worker, which releases due held seats and marks them expired without requiring an HTTP request.
 
 If a hold's class ID must first be discovered, the operation performs an initial non-locking lookup, then locks the class row, re-reads the hold, and locks the hold row. Expiry processing and normal API operations follow this same locking order; no path may acquire the application row before the class row. This prevents deadlocks, prevents two concurrent requests from allocating the same final seat, and makes each counter transition atomic. Database checks and unique indexes remain a second line of defense. Unique-violation or serialization failures must be translated into safe retry/conflict behavior rather than 500 responses.
 
@@ -84,7 +84,9 @@ Repeated confirmation is idempotent: an already confirmed application returns th
 
 ## Expiry processing
 
-A hosted service is planned to periodically claim/process due `HELD` applications in bounded batches. The planned defaults are a `HOLD_EXPIRY_POLL_INTERVAL_SECONDS` of `5` and a `HOLD_EXPIRY_BATCH_SIZE` of `100`. For each class represented in the batch it will acquire the class-row lock, re-check due status under the lock, lock each application row after its class row, decrement the held counter exactly once per transitioned application, and mark the applications `EXPIRED` in the same transaction. The worker will be cancellation-aware and will not prevent clean API shutdown.
+A hosted `BackgroundService` periodically processes due `HELD` applications in bounded batches. The defaults are `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5` and `HOLD_EXPIRY_BATCH_SIZE=100`; both must be positive integers and invalid values fail startup. Each cycle performs a non-locking candidate lookup, then processes each selected class in its own `ReadCommitted` transaction. The transaction locks the class row first, re-reads due HELD applications, locks those application rows second, rechecks status and expiry, transitions only eligible records to `EXPIRED`, decrements `held_seats` by the actual transition count, and commits atomically. A class transaction therefore never decrements for a row that another worker already expired, and a failure rolls back that class while previously committed classes remain valid.
+
+The worker creates a dependency-injection scope for each cycle, uses the registered UTC `TimeProvider`, logs counts and failures without student identifiers, observes shutdown cancellation, and retries on the next poll after an unexpected exception. Multiple API instances are safe because all expiry and seat-mutating operations serialize through the class-row lock. Request-time reconciliation remains in place as a correctness safety net between worker cycles.
 
 The implemented hold creation, hold-read, confirmation, cancellation, and student-history API operations reconcile due holds in their relevant transaction. This provides prompt correctness for capacity decisions, state transitions, hold reads, and history reads. The future worker will use the same reconciliation mechanism so release still happens when no browser is active.
 
@@ -168,6 +170,8 @@ Migrations are applied incrementally. Do not delete or recreate the database as 
 - Domain/unit tests: validation, legal status transitions, duration handling, and idempotent confirmation.
 - API integration tests: implemented class operations, hold creation/read, request-time expiry reconciliation, confirmation, cancellation, student history, response shapes, problem details, malformed/not-found cases, duplicate/no-seat behavior, and persistence.
 - PostgreSQL-backed concurrency tests: simultaneous holds at capacity, simultaneous duplicate applications, confirmation idempotency, cancellation idempotency, and confirmation-versus-cancellation races. These use real PostgreSQL behavior rather than an in-memory provider.
+- Expiry-worker tests: due/future/terminal status handling, exact-once release, bounded batches, multiple classes, concurrent processors, expiry races with reservation/confirmation/cancellation, rollback, hosted lifecycle, configuration validation, and recovery after a transient failure. These use real PostgreSQL for persistence and a direct worker test for retry/lifecycle behavior.
+- Opt-in stress test: a repeatable PostgreSQL-backed 1,000-request scenario against one 120-seat class. It is excluded from the default suite and is run with `-p:DefineConstants=STRESS_TESTS --filter FullyQualifiedName~HoldStressTests`; the verified run accepted 120 reservations and rejected 880 with no capacity violation.
 - Restart/persistence test: create application data, restart the database/API containers, and verify the data remains available through the API.
 - Frontend component/integration tests: class creation/listing, student identifier persistence, hold countdown, automatic status updates, confirmation, cancellation, history, loading, and API errors using Vitest and React Testing Library.
 - Container smoke checks: Compose configuration, health/readiness, API reachability on port 8080, and frontend reachability.
