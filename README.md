@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository currently contains the foundation documentation, an initial backend skeleton, the PostgreSQL persistence foundation, class-management endpoints, reservation endpoints, confirmation, cancellation, student history, and the background expiry worker. The frontend, Docker images, full Compose application, and CI workflows have not yet been implemented.
+Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, and the Phase 6A React frontend foundation. Docker images, the full Compose application, CI workflows, and the remaining frontend reservation interactions are still pending.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -55,7 +55,21 @@ PostgreSQL will use a named volume mounted at `postgres_data:/var/lib/postgresql
 
 The implemented defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`. The expiry interval and batch size must be positive integers; invalid values fail API startup.
 
-The full command is not runnable yet because the API and frontend Dockerfiles, admission workflows, and frontend have intentionally not been created yet. The current Compose file contains the PostgreSQL 18 service only.
+The full command is not runnable yet because the API and frontend Dockerfiles and the final multi-service Compose wiring have not been created. The current Compose file contains the PostgreSQL 18 service only. The frontend can be run independently with the commands below.
+
+## Frontend development
+
+The Phase 6A frontend lives in `frontend/` and uses React 19, TypeScript strict mode, Vite, Tailwind CSS 4 through the official Vite plugin, React Router, TanStack Query, Lucide React, Vitest, and React Testing Library. Its feature-oriented structure separates application providers and routing, reusable layout/UI components, student/admin features, the typed REST client, configuration, identity context, hooks, and shared API types.
+
+Create a local environment file from the safe placeholder and start the Vite development server:
+
+```bash
+cp frontend/.env.example frontend/.env.local
+npm install --prefix frontend
+npm run dev --prefix frontend
+```
+
+The browser talks to `VITE_API_BASE_URL` (default placeholder `http://localhost:8080`) and never connects to PostgreSQL. The selected `X-Student-Id` value is stored in browser local storage for convenience only; it is not authentication or proof of identity. The initial pages provide real class/history reads and administrator class creation through the existing contract, while hold/confirmation/cancellation interactions remain intentionally deferred.
 
 ## Planned verification
 
@@ -98,10 +112,10 @@ AI_USAGE.md               AI-assisted development record
 | Hold creation/read API and request-time expiry reconciliation | Complete |
 | Confirmation, cancellation, and student history | Complete for milestone 5B |
 | Background expiry worker | Complete for the current backend milestone |
-| Frontend UI | Not started |
+| Frontend foundation/UI | Phase 6A complete; reservation interactions remain |
 | PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
 | Docker Compose database service | Complete; full application stack not started |
-| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend coverage remains |
+| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 7 Vitest/RTL tests |
 | CI/CD workflows | Not started |
 
 Do not treat the current repository as a complete runnable application until the outstanding frontend, Docker image, and CI work is complete and verified.

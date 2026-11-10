@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>School Admission Portal</title>
+  <rect width="64" height="64" rx="16" fill="#4338ca" />
+  <path d="m12 27 20-11 20 11-20 11-20-11Z" fill="#eef2ff" />
+  <path d="M19 32v11c6 5 20 5 26 0V32l-13 7-13-7Z" fill="#c7d2fe" />
+  <path d="M52 28v13" stroke="#a5b4fc" stroke-linecap="round" stroke-width="3" />
+</svg>
