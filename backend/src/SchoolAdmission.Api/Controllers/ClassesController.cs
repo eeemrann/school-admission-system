@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SchoolAdmission.Api.Errors;
 using SchoolAdmission.Application.Classes;
 
 namespace SchoolAdmission.Api.Controllers;
@@ -53,37 +54,30 @@ public sealed class ClassesController(IClassManagementService classManagementSer
         return Ok(result.Value);
     }
 
-    private ObjectResult ToProblem(ClassManagementError error)
+    private ObjectResult ToProblem(ClassManagementError error) => error.Code switch
     {
-        var (status, title, type, code) = error.Code switch
-        {
-            ClassManagementErrorCode.ValidationError =>
-                (StatusCodes.Status400BadRequest, "Validation failed", "validation-error", "VALIDATION_ERROR"),
-            ClassManagementErrorCode.ClassNotFound =>
-                (StatusCodes.Status404NotFound, "Class not found", "class-not-found", "CLASS_NOT_FOUND"),
-            _ =>
-                (StatusCodes.Status500InternalServerError, "Unexpected error", "internal-error", "INTERNAL_ERROR")
-        };
-
-        var problem = new ProblemDetails
-        {
-            Type = $"https://example.invalid/problems/{type}",
-            Title = title,
-            Status = status,
-            Detail = error.Detail,
-            Instance = HttpContext.Request.Path
-        };
-        problem.Extensions["code"] = code;
-
-        if (error.Errors is not null)
-        {
-            problem.Extensions["errors"] = error.Errors;
-        }
-
-        return new ObjectResult(problem)
-        {
-            StatusCode = status,
-            ContentTypes = ["application/problem+json"]
-        };
-    }
+        ClassManagementErrorCode.ValidationError => ApiProblemDetails.Create(
+            HttpContext,
+            StatusCodes.Status400BadRequest,
+            "VALIDATION_ERROR",
+            "Validation failed",
+            "validation-error",
+            error.Detail,
+            error.Errors),
+        ClassManagementErrorCode.ClassNotFound => ApiProblemDetails.Create(
+            HttpContext,
+            StatusCodes.Status404NotFound,
+            "CLASS_NOT_FOUND",
+            "Class not found",
+            "class-not-found",
+            error.Detail,
+            error.Errors),
+        _ => ApiProblemDetails.Create(
+            HttpContext,
+            StatusCodes.Status500InternalServerError,
+            "INTERNAL_ERROR",
+            "Unexpected error",
+            "internal-error",
+            "The request could not be completed.")
+    };
 }

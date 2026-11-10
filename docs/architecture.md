@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the planned architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, and class-management API now exist. Hold workflows, frontend, full Docker deployment, and production test coverage remain future implementation stages.
+This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, and the first reservation endpoints now exist. Confirmation, cancellation, student history, the expiry worker, frontend, full Docker deployment, CI, and their remaining test coverage are future implementation stages.
 
 ## Runtime boundaries
 
@@ -33,7 +33,7 @@ The API is the only component allowed to access PostgreSQL. The browser must nev
 The backend should be organized as cleanly separated layers with dependencies pointing inward and each layer testable independently:
 
 - API/presentation: route binding, header extraction, HTTP status mapping, problem details, and Swagger metadata.
-- Application: use cases for class creation/listing, hold creation/reading, confirmation, cancellation, and student application history.
+- Application: use cases for class creation/listing, the implemented hold creation/reading flow, and future confirmation, cancellation, and student application history.
 - Domain: class capacity invariants, application statuses, legal state transitions, and UTC time rules without HTTP or database concerns.
 - Infrastructure/persistence: EF Core DbContext, PostgreSQL mappings, migrations, constraints, transaction helpers, and repositories/adapters. The current persistence foundation uses `SchoolAdmissionDbContext` and migrations in the Infrastructure project.
 - Background processing: a hosted expiry worker with configured polling/batch limits and cancellation-aware execution.
@@ -73,10 +73,10 @@ A partial unique index on `(class_id, student_id)` for `HELD` and `CONFIRMED` ro
 
 Seat-affecting operations will run in PostgreSQL transactions and lock the target class row (`SELECT ... FOR UPDATE` or the EF Core equivalent) before reading or changing counters. All mutation paths use the same lock order: class row first, application/hold row second. The same serialization point is used by:
 
-1. hold creation, which expires due holds for the class, checks capacity, and increments `held_seats`;
-2. confirmation, which expires/checks the target hold, moves one seat from held to confirmed, and changes status;
-3. cancellation, which releases one held seat and changes status;
-4. the expiry worker, which releases due held seats and marks them expired.
+1. hold creation, which expires due holds for the class, checks duplicate active applications and capacity, and increments `held_seats`;
+2. future confirmation, which expires/checks the target hold, moves one seat from held to confirmed, and changes status;
+3. future cancellation, which releases one held seat and changes status;
+4. the future expiry worker, which releases due held seats and marks them expired.
 
 If a hold's class ID must first be discovered, the operation performs an initial non-locking lookup, then locks the class row, re-reads the hold, and locks the hold row. Expiry processing and normal API operations follow this same locking order; no path may acquire the application row before the class row. This prevents deadlocks, prevents two concurrent requests from allocating the same final seat, and makes each counter transition atomic. Database checks and unique indexes remain a second line of defense. Unique-violation or serialization failures must be translated into safe retry/conflict behavior rather than 500 responses.
 
@@ -84,9 +84,9 @@ Repeated confirmation is idempotent: an already confirmed application returns th
 
 ## Expiry processing
 
-A hosted service will periodically claim/process due `HELD` applications in bounded batches. The planned defaults are a `HOLD_EXPIRY_POLL_INTERVAL_SECONDS` of `5` and a `HOLD_EXPIRY_BATCH_SIZE` of `100`. For each class represented in the batch it will acquire the class-row lock, re-check due status under the lock, lock each application row after its class row, decrement the held counter exactly once per transitioned application, and mark the applications `EXPIRED` in the same transaction. The worker will be cancellation-aware and will not prevent clean API shutdown.
+A hosted service is planned to periodically claim/process due `HELD` applications in bounded batches. The planned defaults are a `HOLD_EXPIRY_POLL_INTERVAL_SECONDS` of `5` and a `HOLD_EXPIRY_BATCH_SIZE` of `100`. For each class represented in the batch it will acquire the class-row lock, re-check due status under the lock, lock each application row after its class row, decrement the held counter exactly once per transitioned application, and mark the applications `EXPIRED` in the same transaction. The worker will be cancellation-aware and will not prevent clean API shutdown.
 
-User-facing API operations also reconcile due holds in their relevant transaction. This provides prompt correctness for a hold being confirmed or a class being read, while the worker ensures release still happens when no browser is active.
+The implemented hold creation and hold-read API operations reconcile due holds in their relevant transaction. This provides prompt correctness for capacity decisions and hold reads. The future confirmation flow and worker will use the same reconciliation mechanism so release still happens when no browser is active.
 
 ## Data flow
 
@@ -95,7 +95,7 @@ User-facing API operations also reconcile due holds in their relevant transactio
 1. The student enters a registration ID in the frontend.
 2. The frontend sends `X-Student-Id` with the hold, confirm, cancel, and list requests.
 3. The API validates the request and applies a transaction under the class lock.
-4. PostgreSQL commits the hold/status/counter change or rolls it back as one unit.
+4. PostgreSQL commits the hold/status/counter change or rolls it back as one unit. Hold creation locks the class row first, reconciles due holds, checks active duplicates and capacity, then persists the new hold and counter increment in the same transaction.
 5. The frontend displays the returned status and expiration time, then polls the relevant application list/hold state while a hold is active so expiration appears without a manual refresh.
 6. The browser persists the student ID locally for convenience only; the API/database remains the source of truth and the UI can restore applications after reopening.
 
@@ -166,7 +166,7 @@ Migrations are applied incrementally. Do not delete or recreate the database as 
 ## Testing strategy
 
 - Domain/unit tests: validation, legal status transitions, duration handling, and idempotent confirmation.
-- API integration tests: implemented class operations, response shapes, problem details, malformed/not-found cases, and persistence; the remaining hold operations will be added in later milestones.
+- API integration tests: implemented class operations, hold creation/read, request-time expiry reconciliation, response shapes, problem details, malformed/not-found cases, duplicate/no-seat behavior, and persistence; later workflow operations will be added in subsequent milestones.
 - PostgreSQL-backed concurrency tests: simultaneous holds at capacity, simultaneous duplicate applications, competing confirmation/expiry, repeated confirmation, and cancellation races. These must use real PostgreSQL behavior rather than an in-memory provider.
 - Restart/persistence test: create application data, restart the database/API containers, and verify the data remains available through the API.
 - Frontend component/integration tests: class creation/listing, student identifier persistence, hold countdown, automatic status updates, confirmation, cancellation, history, loading, and API errors using Vitest and React Testing Library.

@@ -1,12 +1,13 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SchoolAdmission.Api.Controllers;
 using SchoolAdmission.Api.Health;
-using SchoolAdmission.Infrastructure.Persistence;
-using SchoolAdmission.Infrastructure.Persistence.Repositories;
 using SchoolAdmission.Application.Abstractions.Persistence;
 using SchoolAdmission.Application.Classes;
+using SchoolAdmission.Application.Reservations;
+using SchoolAdmission.Infrastructure.Persistence;
+using SchoolAdmission.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,8 +39,21 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton(TimeProvider.System);
+var rawHoldDuration = builder.Configuration["HOLD_DURATION_SECONDS"];
+var holdDurationSeconds = HoldConfiguration.DefaultDurationSeconds;
+if (rawHoldDuration is not null
+    && (!int.TryParse(rawHoldDuration, NumberStyles.Integer, CultureInfo.InvariantCulture, out holdDurationSeconds)
+        || holdDurationSeconds <= 0))
+{
+    throw new InvalidOperationException(
+        "HOLD_DURATION_SECONDS must be a positive integer when specified.");
+}
+
+builder.Services.AddSingleton(new HoldConfiguration(holdDurationSeconds));
 builder.Services.AddScoped<IClassManagementService, ClassManagementService>();
 builder.Services.AddScoped<IAdmissionClassRepository, EfAdmissionClassRepository>();
+builder.Services.AddScoped<IHoldReservationService, HoldReservationService>();
+builder.Services.AddScoped<IAdmissionHoldRepository, EfAdmissionHoldRepository>();
 builder.Services.AddDbContext<SchoolAdmissionDbContext>(options =>
 {
     if (string.IsNullOrWhiteSpace(connectionString))
