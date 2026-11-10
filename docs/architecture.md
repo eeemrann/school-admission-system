@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A frontend foundation now exists with routing, shared UI primitives, typed REST access, student identity persistence, QueryClient configuration, initial API-backed pages, and frontend tests. Reservation UI workflows, full Docker deployment, and CI remain future implementation stages.
+This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, and workflow tests. Full Docker deployment and CI remain future implementation stages.
 
 ## Runtime boundaries
 
@@ -46,7 +46,7 @@ The React application uses a small feature-oriented structure:
 
 - route-level views for the administrator experience and the student/parent experience;
 - an API client layer that centralizes the browser-facing base URL, `X-Student-Id` handling, JSON parsing, and problem-details errors;
-- feature components for class administration, class browsing, hold countdowns, application history, confirmation, and cancellation;
+- feature components for class administration, class browsing, hold creation/countdowns, application history, confirmation, and cancellation;
 - local UI state for loading/errors and future polling lifecycle, with the browser's local storage used only to restore the selected student ID;
 - Tailwind CSS for presentation and React Router for navigation.
 
@@ -58,7 +58,7 @@ The current implementation lives under `frontend/src/`:
 - `lib/api/` owns the centralized typed fetch client and RFC 7807 Problem Details errors;
 - `lib/config/`, `contexts/`, `hooks/`, `types/`, and `styles/` hold configuration, browser identity state, shared API models, and Tailwind styles.
 
-The frontend uses the official Tailwind CSS Vite plugin and requires `VITE_API_BASE_URL`. Missing or invalid API configuration is surfaced as an understandable UI error rather than silently targeting an unknown service. TanStack Query uses a 30-second default stale time, a five-minute cache lifetime, no focus refetch, and no repeated retries for business 4xx responses.
+The frontend uses the official Tailwind CSS Vite plugin and requires `VITE_API_BASE_URL`. Missing or invalid API configuration is surfaced as an understandable UI error rather than silently targeting an unknown service. TanStack Query uses a 30-second default stale time, a five-minute cache lifetime, no focus refetch, and no repeated retries for business 4xx responses. Student mutations invalidate class availability, student history, and individual hold queries as appropriate.
 
 The browser calls the host API URL `http://localhost:8080`. It must never use Docker-internal service names such as `api` or `db`. The frontend does not connect directly to PostgreSQL.
 
@@ -108,7 +108,7 @@ The implemented hold creation, hold-read, confirmation, cancellation, and studen
 2. The frontend sends `X-Student-Id` with the hold, confirm, cancel, and list requests.
 3. The API validates the request and applies a transaction under the class lock.
 4. PostgreSQL commits the hold/status/counter change or rolls it back as one unit. Hold creation locks the class row first, reconciles due holds, checks active duplicates and capacity, then persists the new hold and counter increment in the same transaction.
-5. The frontend foundation displays returned class/history state and is structured to display hold status and expiration, then poll the relevant application list/hold state while a hold is active in a later workflow phase.
+5. The frontend displays returned class/history state and derives a once-per-second countdown from the server-provided `expiresAt`. When the countdown reaches zero, it refetches the individual hold; it never changes authoritative status locally or confirms based only on the timer.
 6. The browser persists the student ID locally for convenience only; the API/database remains the source of truth and the UI can restore applications after reopening.
 
 ### Administrator flow

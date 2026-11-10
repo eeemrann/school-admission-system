@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
-import { Button } from "./Button";
+import { Button, type ButtonVariant } from "./Button";
 
 interface DialogProps {
   open: boolean;
@@ -70,6 +70,7 @@ export function Dialog({ open, title, onClose, children }: DialogProps) {
 interface ConfirmationDialogProps extends Omit<DialogProps, "children"> {
   description: string;
   confirmLabel?: string;
+  confirmVariant?: ButtonVariant;
   onConfirm: () => void;
   isLoading?: boolean;
 }
@@ -77,6 +78,7 @@ interface ConfirmationDialogProps extends Omit<DialogProps, "children"> {
 export function ConfirmationDialog({
   description,
   confirmLabel = "Confirm",
+  confirmVariant = "primary",
   onConfirm,
   isLoading,
   ...props
@@ -88,7 +90,7 @@ export function ConfirmationDialog({
         <Button variant="secondary" onClick={props.onClose}>
           Cancel
         </Button>
-        <Button isLoading={isLoading} onClick={onConfirm}>
+        <Button isLoading={isLoading} variant={confirmVariant} onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </div>

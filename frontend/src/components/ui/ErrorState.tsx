@@ -16,7 +16,7 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <Card className="border-rose-200 bg-rose-50/50">
-      <div className="flex gap-3">
+      <div aria-live="assertive" role="alert" className="flex gap-3">
         <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-rose-700" />
         <div className="space-y-3">
           <div>

@@ -19,7 +19,7 @@ Codex is the local AI coding agent used under the project owner's direction for:
 - local repository and development-environment inspection;
 - foundation documentation generation and correction;
 - backend persistence foundation, admission workflows, background expiry processing, and testing;
-- future frontend, Docker image, and CI implementation and testing.
+- frontend implementation and testing, plus future Docker image and CI implementation/testing.
 
 The project owner directs the process and reviews all changes, decisions, test results, and final acceptance.
 
@@ -36,11 +36,12 @@ Date: 2026-11-09
 - Codex implemented and verified the milestone 5B confirmation, cancellation, and student-history API workflows with PostgreSQL transactions, class-first locking, request-time expiry reconciliation, and HTTP concurrency tests.
 - Codex implemented and verified milestone 5C: the hosted background expiry worker, validated poll/batch configuration, per-class PostgreSQL transactions with class-first locking, exact-once release, retry/shutdown handling, PostgreSQL-backed worker tests, and the opt-in 1,000-request stress test. The default backend suite passed 90 tests; the stress test passed with 120 successful reservations and 880 no-seat conflicts.
 - Codex implemented and verified Phase 6A: the React/Vite/TypeScript frontend foundation, feature-based routing, accessible UI primitives, TanStack Query configuration, the typed REST client with Problem Details handling, browser-persisted assignment-level student identity, initial API-backed pages, and Vitest/React Testing Library tests.
-- At that foundation phase, no application source code, dependencies, Dockerfiles, CI workflows, commits, pushes, or remote changes were created.
+- Codex implemented and verified Phase 6B: the complete student browse/hold/countdown/confirm/cancel/history workflow, server-authoritative expiry refresh, query invalidation, student cache isolation, accessible confirmation dialogs, and mocked HTTP/fake-timer workflow tests.
+- During the documented foundation phase, no backend application source code, Dockerfiles, CI workflows, commits, pushes, or remote changes were created. Phase 6A/6B frontend source and dependencies were added in the later frontend phases described below.
 
 ## Planned future work
 
-Future work is planned, not completed. Codex is planned to implement and test the remaining frontend reservation interactions, full Docker Compose services, and CI workflows after project-owner approval. ChatGPT is planned to continue providing interpretation, architecture review, technical guidance, and review of Codex's implementation.
+Future work is planned, not completed. Codex is planned to implement and test full Docker Compose services and CI workflows after project-owner approval. ChatGPT is planned to continue providing interpretation, architecture review, technical guidance, and review of Codex's implementation.
 
 ## Ongoing change log
 
@@ -62,3 +63,4 @@ Future development sessions should append concise entries describing:
 | 2026-11-10 | Admission milestone 5B | Implemented confirmation, cancellation, student history, ownership/state conflict handling, idempotent terminal operations, class-first transactional locking, request-time expiry reconciliation, and PostgreSQL-backed HTTP/concurrency tests; the full suite passed with 66 tests and no skipped tests | Background expiry worker, frontend, Docker images/full Compose application, and CI remain intentionally deferred |
 | 2026-11-10 | Background expiry worker milestone 5C | Implemented hosted expiry processing, positive poll/batch configuration validation, per-class ReadCommitted transactions, class-first locking, exact-once release, failure recovery, graceful shutdown, PostgreSQL worker/race tests, and the opt-in 1,000-request stress test; 90 default tests and the stress test passed | Frontend, Docker images/full Compose application, CI/CD, and deployment remain intentionally deferred |
 | 2026-11-10 | Frontend foundation Phase 6A | Added React 19/Vite/TypeScript frontend, Tailwind Vite integration, feature routes, accessible UI primitives, QueryClient defaults, typed API client, Problem Details parsing, student identity persistence, initial API-backed class/history/admin views, and 7 frontend tests; lint, typecheck, test, and build passed | Reservation/confirmation/cancellation UI, Docker images/full Compose application, CI/CD, and deployment remain intentionally deferred |
+| 2026-11-10 | Complete student workflow Phase 6B | Added hold creation, live server-derived countdowns, authoritative expiry rechecks, confirmation/cancellation dialogs, history actions for all statuses, mutation invalidation, identity cache isolation, and mocked workflow tests; 24 frontend tests, lint, typecheck, formatting, and build passed; backend build and 90-test regression suite remained green | Docker images/full Compose application, CI/CD, and deployment remain intentionally deferred |

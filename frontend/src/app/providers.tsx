@@ -5,9 +5,15 @@ import { createQueryClient } from "./queryClient";
 
 const queryClient = createQueryClient();
 
-export function AppProviders({ children }: { children: ReactNode }) {
+export function AppProviders({
+  children,
+  client = queryClient,
+}: {
+  children: ReactNode;
+  client?: ReturnType<typeof createQueryClient>;
+}) {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={client}>
       <StudentIdentityProvider>{children}</StudentIdentityProvider>
     </QueryClientProvider>
   );

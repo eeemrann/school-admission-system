@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { ApiError } from "../lib/api/client";
+import { ApiConfigurationError } from "../lib/config/env";
 
 export function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -10,6 +11,10 @@ export function createQueryClient(): QueryClient {
         refetchOnWindowFocus: false,
         retry: (failureCount, error) => {
           if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
+            return false;
+          }
+
+          if (error instanceof ApiConfigurationError) {
             return false;
           }
 

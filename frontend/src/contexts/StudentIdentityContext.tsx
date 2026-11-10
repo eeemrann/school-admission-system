@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { validateStudentId } from "./studentIdentity";
 import { StudentIdentityContext } from "./studentIdentityContext";
@@ -5,18 +6,25 @@ import { StudentIdentityContext } from "./studentIdentityContext";
 const STORAGE_KEY = "school-admission.student-id";
 
 export function StudentIdentityProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [studentId, setStudentIdState] = useState(readStoredStudentId);
 
-  const setStudentId = useCallback((rawStudentId: string) => {
-    const result = validateStudentId(rawStudentId);
-    if (!result.ok || !result.value) {
-      return result;
-    }
+  const setStudentId = useCallback(
+    (rawStudentId: string) => {
+      const result = validateStudentId(rawStudentId);
+      if (!result.ok || !result.value) {
+        return result;
+      }
 
-    setStudentIdState(result.value);
-    writeStoredStudentId(result.value);
-    return result;
-  }, []);
+      if (result.value !== studentId) {
+        queryClient.removeQueries({ queryKey: ["student"] });
+      }
+      setStudentIdState(result.value);
+      writeStoredStudentId(result.value);
+      return result;
+    },
+    [queryClient, studentId],
+  );
 
   const clearStudentId = useCallback(() => {
     setStudentIdState(null);
