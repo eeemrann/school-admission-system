@@ -10,4 +10,18 @@ public interface IHoldReservationService
     Task<HoldOperationResult<HoldDetailsResponse>> GetByIdAsync(
         string? publicHoldId,
         CancellationToken cancellationToken);
+
+    Task<HoldOperationResult<HoldConfirmationResponse>> ConfirmAsync(
+        string? publicHoldId,
+        string? studentId,
+        CancellationToken cancellationToken);
+
+    Task<HoldOperationResult<bool>> CancelAsync(
+        string? publicHoldId,
+        string? studentId,
+        CancellationToken cancellationToken);
+
+    Task<HoldOperationResult<IReadOnlyList<HoldHistoryResponse>>> ListForStudentAsync(
+        string? studentId,
+        CancellationToken cancellationToken);
 }

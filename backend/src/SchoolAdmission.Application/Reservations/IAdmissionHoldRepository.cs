@@ -15,4 +15,21 @@ public interface IAdmissionHoldRepository
         Guid holdId,
         DateTimeOffset currentUtcTime,
         CancellationToken cancellationToken);
+
+    Task<HoldMutationResult> ConfirmAsync(
+        Guid holdId,
+        string studentId,
+        DateTimeOffset currentUtcTime,
+        CancellationToken cancellationToken);
+
+    Task<HoldMutationResult> CancelAsync(
+        Guid holdId,
+        string studentId,
+        DateTimeOffset currentUtcTime,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<HoldHistoryItem>> ListForStudentAsync(
+        string studentId,
+        DateTimeOffset currentUtcTime,
+        CancellationToken cancellationToken);
 }

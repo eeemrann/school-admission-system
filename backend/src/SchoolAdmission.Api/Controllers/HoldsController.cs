@@ -45,6 +45,65 @@ public sealed class HoldsController(IHoldReservationService holdReservationServi
         return Ok(result.Value);
     }
 
+    [HttpPost("/holds/{holdId}/confirm")]
+    [ProducesResponseType(typeof(HoldConfirmationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<HoldConfirmationResponse>> Confirm(
+        string holdId,
+        [FromHeader(Name = "X-Student-Id")] string? studentId,
+        CancellationToken cancellationToken)
+    {
+        var result = await holdReservationService.ConfirmAsync(holdId, studentId, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpDelete("/holds/{holdId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Cancel(
+        string holdId,
+        [FromHeader(Name = "X-Student-Id")] string? studentId,
+        CancellationToken cancellationToken)
+    {
+        var result = await holdReservationService.CancelAsync(holdId, studentId, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        return NoContent();
+    }
+
+    [HttpGet("/me/holds")]
+    [ProducesResponseType(typeof(IReadOnlyList<HoldHistoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IReadOnlyList<HoldHistoryResponse>>> ListForStudent(
+        [FromHeader(Name = "X-Student-Id")] string? studentId,
+        CancellationToken cancellationToken)
+    {
+        var result = await holdReservationService.ListForStudentAsync(studentId, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        return Ok(result.Value);
+    }
+
     private ObjectResult ToProblem(HoldManagementError error) => error.Code switch
     {
         HoldManagementErrorCode.ValidationError => ApiProblemDetails.Create(
@@ -79,6 +138,14 @@ public sealed class HoldsController(IHoldReservationService holdReservationServi
             "hold-not-found",
             error.Detail,
             error.Errors),
+        HoldManagementErrorCode.HoldOwnerForbidden => ApiProblemDetails.Create(
+            HttpContext,
+            StatusCodes.Status403Forbidden,
+            "HOLD_OWNER_FORBIDDEN",
+            "Hold owner mismatch",
+            "hold-owner-forbidden",
+            error.Detail,
+            error.Errors),
         HoldManagementErrorCode.DuplicateActiveApplication => ApiProblemDetails.Create(
             HttpContext,
             StatusCodes.Status409Conflict,
@@ -93,6 +160,30 @@ public sealed class HoldsController(IHoldReservationService holdReservationServi
             "NO_SEATS_AVAILABLE",
             "No seats available",
             "no-seats-available",
+            error.Detail,
+            error.Errors),
+        HoldManagementErrorCode.HoldExpired => ApiProblemDetails.Create(
+            HttpContext,
+            StatusCodes.Status409Conflict,
+            "HOLD_EXPIRED",
+            "Hold expired",
+            "hold-expired",
+            error.Detail,
+            error.Errors),
+        HoldManagementErrorCode.HoldCancelled => ApiProblemDetails.Create(
+            HttpContext,
+            StatusCodes.Status409Conflict,
+            "HOLD_CANCELLED",
+            "Hold cancelled",
+            "hold-cancelled",
+            error.Detail,
+            error.Errors),
+        HoldManagementErrorCode.ConfirmedHoldCannotCancel => ApiProblemDetails.Create(
+            HttpContext,
+            StatusCodes.Status409Conflict,
+            "CONFIRMED_HOLD_CANNOT_CANCEL",
+            "Confirmed hold cannot be cancelled",
+            "confirmed-hold-cannot-cancel",
             error.Detail,
             error.Errors),
         _ => ApiProblemDetails.Create(

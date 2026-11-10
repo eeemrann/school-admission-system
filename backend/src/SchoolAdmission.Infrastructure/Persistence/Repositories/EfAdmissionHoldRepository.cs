@@ -119,6 +119,226 @@ public sealed class EfAdmissionHoldRepository(SchoolAdmissionDbContext dbContext
         return hold;
     }
 
+    public async Task<HoldMutationResult> ConfirmAsync(
+        Guid holdId,
+        string studentId,
+        DateTimeOffset currentUtcTime,
+        CancellationToken cancellationToken)
+    {
+        var classId = await FindClassIdAsync(holdId, cancellationToken);
+        if (classId is null)
+        {
+            return new HoldMutationResult(null, HoldMutationFailure.HoldNotFound);
+        }
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted,
+            cancellationToken);
+
+        var admissionClass = await LockClassAsync(classId.Value, cancellationToken);
+        if (admissionClass is null)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.HoldNotFound);
+        }
+
+        var hold = await LockAndLoadHoldAsync(holdId, cancellationToken);
+        if (hold is null)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.HoldNotFound);
+        }
+
+        if (!string.Equals(hold.StudentId, studentId, StringComparison.Ordinal))
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.OwnershipViolation);
+        }
+
+        if (hold.Status == HoldStatus.Confirmed)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return new HoldMutationResult(hold, null);
+        }
+
+        if (hold.Status == HoldStatus.Cancelled)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.Cancelled);
+        }
+
+        if (hold.Status == HoldStatus.Expired)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.Expired);
+        }
+
+        var dueHolds = await LockDueHoldsAsync(classId.Value, currentUtcTime, cancellationToken);
+        ExpireHolds(admissionClass, dueHolds);
+
+        if (hold.Status == HoldStatus.Held && hold.ExpiresAt <= currentUtcTime)
+        {
+            ExpireHold(admissionClass, hold);
+        }
+
+        if (hold.Status == HoldStatus.Expired)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return new HoldMutationResult(null, HoldMutationFailure.Expired);
+        }
+
+        if (admissionClass.HeldSeats <= 0)
+        {
+            throw new InvalidOperationException("The class held-seat counter is inconsistent with its holds.");
+        }
+
+        hold.Status = HoldStatus.Confirmed;
+        hold.ConfirmedAt = currentUtcTime;
+        admissionClass.HeldSeats--;
+        admissionClass.ConfirmedSeats++;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return new HoldMutationResult(hold, null);
+    }
+
+    public async Task<HoldMutationResult> CancelAsync(
+        Guid holdId,
+        string studentId,
+        DateTimeOffset currentUtcTime,
+        CancellationToken cancellationToken)
+    {
+        var classId = await FindClassIdAsync(holdId, cancellationToken);
+        if (classId is null)
+        {
+            return new HoldMutationResult(null, HoldMutationFailure.HoldNotFound);
+        }
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted,
+            cancellationToken);
+
+        var admissionClass = await LockClassAsync(classId.Value, cancellationToken);
+        if (admissionClass is null)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.HoldNotFound);
+        }
+
+        var hold = await LockAndLoadHoldAsync(holdId, cancellationToken);
+        if (hold is null)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.HoldNotFound);
+        }
+
+        if (!string.Equals(hold.StudentId, studentId, StringComparison.Ordinal))
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.OwnershipViolation);
+        }
+
+        if (hold.Status == HoldStatus.Cancelled)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return new HoldMutationResult(hold, null);
+        }
+
+        if (hold.Status == HoldStatus.Confirmed)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.Confirmed);
+        }
+
+        if (hold.Status == HoldStatus.Expired)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            return new HoldMutationResult(null, HoldMutationFailure.Expired);
+        }
+
+        var dueHolds = await LockDueHoldsAsync(classId.Value, currentUtcTime, cancellationToken);
+        ExpireHolds(admissionClass, dueHolds);
+
+        if (hold.Status == HoldStatus.Held && hold.ExpiresAt <= currentUtcTime)
+        {
+            ExpireHold(admissionClass, hold);
+        }
+
+        if (hold.Status == HoldStatus.Expired)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return new HoldMutationResult(null, HoldMutationFailure.Expired);
+        }
+
+        if (admissionClass.HeldSeats <= 0)
+        {
+            throw new InvalidOperationException("The class held-seat counter is inconsistent with its holds.");
+        }
+
+        hold.Status = HoldStatus.Cancelled;
+        hold.CancelledAt = currentUtcTime;
+        admissionClass.HeldSeats--;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return new HoldMutationResult(hold, null);
+    }
+
+    public async Task<IReadOnlyList<HoldHistoryItem>> ListForStudentAsync(
+        string studentId,
+        DateTimeOffset currentUtcTime,
+        CancellationToken cancellationToken)
+    {
+        var classIds = await dbContext.AdmissionHolds
+            .AsNoTracking()
+            .Where(hold => hold.StudentId == studentId)
+            .Select(hold => hold.ClassId)
+            .Distinct()
+            .OrderBy(classId => classId)
+            .ToListAsync(cancellationToken);
+
+        if (classIds.Count == 0)
+        {
+            return [];
+        }
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted,
+            cancellationToken);
+
+        foreach (var classId in classIds)
+        {
+            var admissionClass = await LockClassAsync(classId, cancellationToken);
+            if (admissionClass is null)
+            {
+                continue;
+            }
+
+            var dueHolds = await LockDueHoldsAsync(classId, currentUtcTime, cancellationToken);
+            ExpireHolds(admissionClass, dueHolds);
+        }
+
+        var history = await (
+            from hold in dbContext.AdmissionHolds.AsNoTracking()
+            join admissionClass in dbContext.AdmissionClasses.AsNoTracking()
+                on hold.ClassId equals admissionClass.Id
+            where hold.StudentId == studentId
+            orderby hold.CreatedAt descending, hold.Id descending
+            select new HoldHistoryItem(
+                hold.Id,
+                hold.ClassId,
+                admissionClass.Name,
+                hold.Status,
+                hold.ExpiresAt))
+            .ToListAsync(cancellationToken);
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return history;
+    }
+
     private async Task<AdmissionClass?> LockClassAsync(
         Guid classId,
         CancellationToken cancellationToken)
@@ -205,6 +425,19 @@ public sealed class EfAdmissionHoldRepository(SchoolAdmissionDbContext dbContext
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         return await reader.ReadAsync(cancellationToken);
+    }
+
+    private async Task<AdmissionHold?> LockAndLoadHoldAsync(
+        Guid holdId,
+        CancellationToken cancellationToken)
+    {
+        if (!await LockHoldAsync(holdId, cancellationToken))
+        {
+            return null;
+        }
+
+        return await dbContext.AdmissionHolds
+            .SingleOrDefaultAsync(hold => hold.Id == holdId, cancellationToken);
     }
 
     private DbCommand CreateCommand(

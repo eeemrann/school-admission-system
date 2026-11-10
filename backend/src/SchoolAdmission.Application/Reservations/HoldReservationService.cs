@@ -71,6 +71,94 @@ public sealed class HoldReservationService(
             : new HoldOperationResult<HoldDetailsResponse>(MapDetailsResponse(hold), null);
     }
 
+    public async Task<HoldOperationResult<HoldConfirmationResponse>> ConfirmAsync(
+        string? publicHoldId,
+        string? studentId,
+        CancellationToken cancellationToken)
+    {
+        if (!HoldIdCodec.TryParse(publicHoldId, out var holdId))
+        {
+            return new HoldOperationResult<HoldConfirmationResponse>(
+                null,
+                ValidationError("Hold ID must use the h_ prefix followed by a valid UUID."));
+        }
+
+        if (!TryNormalizeStudentId(studentId, out var normalizedStudentId))
+        {
+            return new HoldOperationResult<HoldConfirmationResponse>(
+                null,
+                StudentIdRequiredError());
+        }
+
+        var result = await repository.ConfirmAsync(
+            holdId,
+            normalizedStudentId,
+            timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return new HoldOperationResult<HoldConfirmationResponse>(
+                null,
+                MapMutationFailure(result.Failure!.Value));
+        }
+
+        return new HoldOperationResult<HoldConfirmationResponse>(
+            new HoldConfirmationResponse(
+                HoldIdCodec.ToPublicId(result.Hold!.Id),
+                ToPublicStatus(result.Hold.Status)),
+            null);
+    }
+
+    public async Task<HoldOperationResult<bool>> CancelAsync(
+        string? publicHoldId,
+        string? studentId,
+        CancellationToken cancellationToken)
+    {
+        if (!HoldIdCodec.TryParse(publicHoldId, out var holdId))
+        {
+            return new HoldOperationResult<bool>(
+                false,
+                ValidationError("Hold ID must use the h_ prefix followed by a valid UUID."));
+        }
+
+        if (!TryNormalizeStudentId(studentId, out var normalizedStudentId))
+        {
+            return new HoldOperationResult<bool>(false, StudentIdRequiredError());
+        }
+
+        var result = await repository.CancelAsync(
+            holdId,
+            normalizedStudentId,
+            timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return result.IsSuccess
+            ? new HoldOperationResult<bool>(true, null)
+            : new HoldOperationResult<bool>(false, MapMutationFailure(result.Failure!.Value));
+    }
+
+    public async Task<HoldOperationResult<IReadOnlyList<HoldHistoryResponse>>> ListForStudentAsync(
+        string? studentId,
+        CancellationToken cancellationToken)
+    {
+        if (!TryNormalizeStudentId(studentId, out var normalizedStudentId))
+        {
+            return new HoldOperationResult<IReadOnlyList<HoldHistoryResponse>>(
+                null,
+                StudentIdRequiredError());
+        }
+
+        var history = await repository.ListForStudentAsync(
+            normalizedStudentId,
+            timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return new HoldOperationResult<IReadOnlyList<HoldHistoryResponse>>(
+            history.Select(MapHistoryResponse).ToArray(),
+            null);
+    }
+
     private static HoldResponse MapCreatedResponse(AdmissionHold hold) =>
         new(
             HoldIdCodec.ToPublicId(hold.Id),
@@ -108,6 +196,45 @@ public sealed class HoldReservationService(
             "The requested class has no available seats."),
         _ => throw new ArgumentOutOfRangeException(nameof(failure), failure, "Unknown reservation failure.")
     };
+
+    private static HoldManagementError MapMutationFailure(HoldMutationFailure failure) => failure switch
+    {
+        HoldMutationFailure.HoldNotFound => new(
+            HoldManagementErrorCode.HoldNotFound,
+            "The requested hold was not found."),
+        HoldMutationFailure.OwnershipViolation => new(
+            HoldManagementErrorCode.HoldOwnerForbidden,
+            "The requested hold belongs to a different student."),
+        HoldMutationFailure.Expired => new(
+            HoldManagementErrorCode.HoldExpired,
+            "The hold has expired and cannot be changed."),
+        HoldMutationFailure.Cancelled => new(
+            HoldManagementErrorCode.HoldCancelled,
+            "The hold has already been cancelled."),
+        HoldMutationFailure.Confirmed => new(
+            HoldManagementErrorCode.ConfirmedHoldCannotCancel,
+            "A confirmed admission cannot be cancelled."),
+        _ => throw new ArgumentOutOfRangeException(nameof(failure), failure, "Unknown hold mutation failure.")
+    };
+
+    private static HoldHistoryResponse MapHistoryResponse(HoldHistoryItem item) =>
+        new(
+            HoldIdCodec.ToPublicId(item.HoldId),
+            ClassIdCodec.ToPublicId(item.ClassId),
+            item.ClassName,
+            ToPublicStatus(item.Status),
+            item.ExpiresAt);
+
+    private static bool TryNormalizeStudentId(string? studentId, out string normalizedStudentId)
+    {
+        normalizedStudentId = studentId?.Trim() ?? string.Empty;
+        return !string.IsNullOrWhiteSpace(normalizedStudentId);
+    }
+
+    private static HoldManagementError StudentIdRequiredError() =>
+        new(
+            HoldManagementErrorCode.StudentIdRequired,
+            "X-Student-Id is required and cannot be blank.");
 
     private static HoldManagementError ValidationError(string detail) =>
         new(HoldManagementErrorCode.ValidationError, detail);

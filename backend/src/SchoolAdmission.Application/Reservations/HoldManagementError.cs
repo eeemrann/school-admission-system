@@ -6,8 +6,12 @@ public enum HoldManagementErrorCode
     StudentIdRequired,
     ClassNotFound,
     HoldNotFound,
+    HoldOwnerForbidden,
     DuplicateActiveApplication,
-    NoSeatsAvailable
+    NoSeatsAvailable,
+    HoldExpired,
+    HoldCancelled,
+    ConfirmedHoldCannotCancel
 }
 
 public sealed record HoldManagementError(

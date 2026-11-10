@@ -2,7 +2,7 @@
 
 ## Status
 
-This contract is fixed for the assignment. The backend must implement these eight operations without changing their paths, request headers, or success response field names. Class-management operations and hold creation/read are implemented in the current milestone. Confirmation, cancellation, and student history remain planned. Examples use UTC timestamps in RFC 3339 form.
+This contract is fixed for the assignment. The backend must implement these eight operations without changing their paths, request headers, or success response field names. Class-management operations, hold creation/read, confirmation, cancellation, and student history are implemented in the current milestone. Examples use UTC timestamps in RFC 3339 form.
 
 Base URL:
 
@@ -174,7 +174,7 @@ The possible `status` values are `HELD`, `CONFIRMED`, `EXPIRED`, and `CANCELLED`
 - `400 Bad Request`: `holdId` is malformed.
 - `404 Not Found`: no hold exists for `holdId`.
 
-## 6. Confirm admission (planned)
+## 6. Confirm admission
 
 ### Request
 
@@ -203,7 +203,7 @@ The operation is idempotent for the owning student and an already `CONFIRMED` ho
 - `404 Not Found`: no hold exists for `holdId`.
 - `409 Conflict`: the hold is expired, cancelled, or otherwise cannot be confirmed.
 
-## 7. Cancel a hold (planned)
+## 7. Cancel a hold
 
 ### Request
 
@@ -223,7 +223,7 @@ The application remains in history with status `CANCELLED`. Repeating cancellati
 - `404 Not Found`: no hold exists for `holdId`.
 - `409 Conflict`: the hold is `EXPIRED` or `CONFIRMED` and cannot be cancelled through this contract.
 
-## 8. List the current student's applications (planned)
+## 8. List the current student's applications
 
 ### Request
 
@@ -247,6 +247,7 @@ X-Student-Id: 20152691234567890
 ```
 
 The response includes the student's previous `EXPIRED` and `CANCELLED` applications as well as current `HELD` and `CONFIRMED` applications. The API may reconcile due holds before returning the list. An identifier with no applications returns `[]`.
+Results are ordered deterministically by newest `CreatedAt` first, then by hold ID descending.
 
 ### Expected errors
 
@@ -276,6 +277,5 @@ The success responses, paths, headers, field names, and success status codes abo
 | `HOLD_EXPIRED` | 409 | The hold has expired or `expiresAt <= currentUtcTime`. |
 | `HOLD_CANCELLED` | 409 | The hold has already been cancelled. |
 | `CONFIRMED_HOLD_CANNOT_CANCEL` | 409 | A confirmed admission cannot be cancelled through this contract. |
-| `INVALID_HOLD_STATE` | 409 | The requested state transition is not allowed. |
 
-The API may add a stable code for an additional documented business rule, but unexpected failures remain 500 responses and must not expose implementation details.
+Unexpected failures remain 500 responses and must not expose implementation details.
