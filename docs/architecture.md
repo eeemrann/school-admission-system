@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, and workflow tests. Full Docker deployment and CI remain future implementation stages.
+This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, read-only class details, and workflow tests. Full Docker deployment and CI remain future implementation stages.
 
 ## Runtime boundaries
 
@@ -46,7 +46,7 @@ The React application uses a small feature-oriented structure:
 
 - route-level views for the administrator experience and the student/parent experience;
 - an API client layer that centralizes the browser-facing base URL, `X-Student-Id` handling, JSON parsing, and problem-details errors;
-- feature components for class administration, class browsing, hold creation/countdowns, application history, confirmation, and cancellation;
+- feature components for class administration/dashboard, class browsing, hold creation/countdowns, application history, confirmation, and cancellation;
 - local UI state for loading/errors and future polling lifecycle, with the browser's local storage used only to restore the selected student ID;
 - Tailwind CSS for presentation and React Router for navigation.
 
@@ -57,6 +57,8 @@ The current implementation lives under `frontend/src/`:
 - `features/classes/`, `features/student/`, `features/admin/`, `features/landing/`, and `features/not-found/` own route-level behavior;
 - `lib/api/` owns the centralized typed fetch client and RFC 7807 Problem Details errors;
 - `lib/config/`, `contexts/`, `hooks/`, `types/`, and `styles/` hold configuration, browser identity state, shared API models, and Tailwind styles.
+
+The administrator portal has its own responsive sidebar layout under `components/layout/AdminLayout.tsx`. Its dashboard and class-management views use the existing `GET /classes`, `GET /classes/{classId}`, and `POST /classes` contract. Aggregate counts and utilization percentages are pure frontend derivations of returned `ClassSummary` values; the UI does not fabricate application, student, revenue, or payment reporting. Administrator class creation invalidates the shared `classes` cache used by the student catalogue and administrator views. The portal is intentionally unauthenticated because the assignment provides no administrator authentication API.
 
 The frontend uses the official Tailwind CSS Vite plugin and requires `VITE_API_BASE_URL`. Missing or invalid API configuration is surfaced as an understandable UI error rather than silently targeting an unknown service. TanStack Query uses a 30-second default stale time, a five-minute cache lifetime, no focus refetch, and no repeated retries for business 4xx responses. Student mutations invalidate class availability, student history, and individual hold queries as appropriate.
 
@@ -115,7 +117,8 @@ The implemented hold creation, hold-read, confirmation, cancellation, and studen
 
 1. The admin UI submits a class name and positive capacity.
 2. The API validates and persists the class.
-3. The class list reads authoritative counters and derives `availableSeats` as `totalSeats - heldSeats - confirmedSeats`.
+3. TanStack Query invalidates the shared class list and detail caches after a successful creation.
+4. The dashboard and class list read authoritative counters and derive utilization for presentation; `availableSeats` remains the API-provided value.
 
 ## Browser and Docker networking
 
@@ -183,7 +186,7 @@ Migrations are applied incrementally. Do not delete or recreate the database as 
 - Expiry-worker tests: due/future/terminal status handling, exact-once release, bounded batches, multiple classes, concurrent processors, expiry races with reservation/confirmation/cancellation, rollback, hosted lifecycle, configuration validation, and recovery after a transient failure. These use real PostgreSQL for persistence and a direct worker test for retry/lifecycle behavior.
 - Opt-in stress test: a repeatable PostgreSQL-backed 1,000-request scenario against one 120-seat class. It is excluded from the default suite and is run with `-p:DefineConstants=STRESS_TESTS --filter FullyQualifiedName~HoldStressTests`; the verified run accepted 120 reservations and rejected 880 with no capacity violation.
 - Restart/persistence test: create application data, restart the database/API containers, and verify the data remains available through the API.
-- Frontend component/integration tests: class creation/listing, student identifier persistence, hold countdown, automatic status updates, confirmation, cancellation, history, loading, and API errors using Vitest and React Testing Library.
+- Frontend component/integration tests: administrator dashboard aggregation, class listing/search, class creation validation/invalidation, class details/navigation, student identifier persistence, hold countdown, automatic status updates, confirmation, cancellation, history, loading, and API errors using Vitest and React Testing Library.
 - Container smoke checks: Compose configuration, health/readiness, API reachability on port 8080, and frontend reachability.
 
 ## CI/CD strategy

@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, and the Phase 6A/6B React student admission workflow. Docker images, the full Compose application, CI workflows, and deployment are still pending.
+Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, and the Phase 6A/6B/6C React student and administrator workflows. Docker images, the full Compose application, CI workflows, and deployment are still pending.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -59,7 +59,7 @@ The full command is not runnable yet because the API and frontend Dockerfiles an
 
 ## Frontend development
 
-The Phase 6A/6B frontend lives in `frontend/` and uses React 19, TypeScript strict mode, Vite, Tailwind CSS 4 through the official Vite plugin, React Router, TanStack Query, Lucide React, Vitest, and React Testing Library. Its feature-oriented structure separates application providers and routing, reusable layout/UI components, student/admin features, the typed REST client, configuration, identity context, hooks, and shared API types.
+The Phase 6A/6B/6C frontend lives in `frontend/` and uses React 19, TypeScript strict mode, Vite, Tailwind CSS 4 through the official Vite plugin, React Router, TanStack Query, Lucide React, Vitest, and React Testing Library. Its feature-oriented structure separates application providers and routing, reusable layout/UI components, student/admin features, the typed REST client, configuration, identity context, hooks, and shared API types.
 
 Create a local environment file from the safe placeholder and start the Vite development server:
 
@@ -69,7 +69,7 @@ npm install --prefix frontend
 npm run dev --prefix frontend
 ```
 
-The browser talks to `VITE_API_BASE_URL` (default placeholder `http://localhost:8080`) and never connects to PostgreSQL. The selected `X-Student-Id` value is stored in browser local storage for convenience only; it is not authentication or proof of identity. The student portal now supports the complete browse, hold, countdown, confirm, cancel, and history workflow through the existing contract. The backend remains authoritative for capacity, ownership, status, and expiry.
+The browser talks to `VITE_API_BASE_URL` (default placeholder `http://localhost:8080`) and never connects to PostgreSQL. The selected `X-Student-Id` value is stored in browser local storage for convenience only; it is not authentication or proof of identity. The student portal supports the complete browse, hold, countdown, confirm, cancel, and history workflow through the existing contract. The administrator portal provides API-backed class metrics, searchable class management, class creation, and read-only class details. Administrator routes are intentionally unauthenticated because no administrator authentication contract exists. The backend remains authoritative for capacity, ownership, status, and expiry.
 
 ## Verification
 
@@ -85,7 +85,7 @@ npm run build --prefix frontend
 npm run test --prefix frontend -- --run
 ```
 
-The current backend test project includes 90 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, and concurrency tests. The frontend has 24 passing Vitest/React Testing Library tests. An opt-in stress test is documented below.
+The current backend test project includes 90 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, and concurrency tests. The frontend has 40 passing Vitest/React Testing Library tests. An opt-in stress test is documented below.
 
 ## Repository layout
 
@@ -112,10 +112,10 @@ AI_USAGE.md               AI-assisted development record
 | Hold creation/read API and request-time expiry reconciliation | Complete |
 | Confirmation, cancellation, and student history | Complete for milestone 5B |
 | Background expiry worker | Complete for the current backend milestone |
-| Frontend student workflow | Phase 6A/6B complete; Docker/CI/deployment remain |
+| Frontend student and administrator workflows | Phase 6A/6B/6C complete; Docker/CI/deployment remain |
 | PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
 | Docker Compose database service | Complete; full application stack not started |
-| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 24 Vitest/RTL tests |
+| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 40 Vitest/RTL tests |
 | CI/CD workflows | Not started |
 
 Do not treat the current repository as a complete runnable application until the outstanding Docker image, full Compose, and CI work is complete and verified.

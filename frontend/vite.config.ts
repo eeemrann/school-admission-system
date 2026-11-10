@@ -12,5 +12,9 @@ export default defineConfig({
     setupFiles: "./src/test/setup.ts",
     css: true,
     restoreMocks: true,
+    // API tests replace global fetch and reset the singleton client; process
+    // isolation keeps those mocked HTTP lifecycles independent across files.
+    pool: "forks",
+    maxWorkers: 4,
   },
 });
