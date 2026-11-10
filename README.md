@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the Phase 6A/6B/6C React student and administrator workflows, the Phase 6D real-browser E2E harness, the Phase 7B backend API image, and the Phase 7C frontend image. The migration service, full Compose application, CI workflows, and deployment are still pending.
+Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the Phase 6A/6B/6C React student and administrator workflows, the Phase 6D real-browser E2E harness, the Phase 7B backend API image, the Phase 7C frontend image, and the Phase 7D dedicated EF Core migration image. Full Compose integration, CI workflows, and deployment are still pending.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -12,11 +12,12 @@ The planned system is a professional school admission workflow for administrator
 
 ## Planned architecture
 
-The repository will contain three runtime services:
+The repository will contain three application runtime services and one one-shot deployment service:
 
 1. PostgreSQL, with a named Docker volume for application data.
 2. An ASP.NET Core API at `http://localhost:8080`.
 3. A Vite-served React frontend at the documented local frontend URL, planned as `http://localhost:5173`.
+4. A migration service that applies existing EF Core migrations before the API starts.
 
 The frontend will communicate only with the REST API. The API owns validation, application state transitions, expiry reconciliation, and seat allocation. Request-time reconciliation and the implemented hosted background expiry worker use the same class-first transaction strategy. PostgreSQL enforces persistence and key invariants. See [docs/architecture.md](docs/architecture.md) and [ASSUMPTIONS.md](ASSUMPTIONS.md).
 
@@ -42,6 +43,19 @@ docker build -f backend/Dockerfile -t school-admission-api:local .
 The build uses the official Microsoft .NET 10 SDK image as its base and installs the repository-pinned SDK `10.0.114` from Microsoft's published archive with SHA-512 verification. The final image uses the official ASP.NET Core `10.0.14` runtime, contains only published API output, runs as the unprivileged `app` user, and listens on container port `8080`.
 
 The image does not apply EF Core migrations. Inject `ConnectionStrings__DefaultConnection`, `HOLD_DURATION_SECONDS`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS`, and `HOLD_EXPIRY_BATCH_SIZE` at runtime. The API's `/health` endpoint is process liveness; `/health/ready` verifies PostgreSQL connectivity. A reliable image-level HTTP health probe is deferred to the Compose integration phase because the minimal runtime image does not include `curl` or `wget`.
+
+## EF Core migration image
+
+Phase 7D adds a dedicated one-shot migrator target to the same multi-stage backend Dockerfile. The default target remains the API image:
+
+```bash
+docker build -f backend/Dockerfile -t school-admission-api:local .
+docker build --target migrator -f backend/Dockerfile -t school-admission-migrator:local .
+```
+
+The migrator references the Infrastructure project and applies only committed EF Core migrations with `Database.MigrateAsync()`. It explicitly opens PostgreSQL before reading migration metadata, classifies structured PostgreSQL/Npgsql/socket failures, and retries only transient connectivity failures. Production defaults are 15 attempts with a two-second delay; bounded `MIGRATOR_MAX_ATTEMPTS` and `MIGRATOR_RETRY_DELAY_MILLISECONDS` overrides are available for disposable verification environments. Missing or permanent configuration failures exit with code `2`, exhausted transient database-unavailability exits with code `3`, migration failures exit with code `4`, and cancellation exits with code `130`. Connection strings are injected at runtime; they are never embedded in the image or written to logs. The image has no HTTP port, contains only the published migrator output, and runs as the non-root `app` user.
+
+The API does not apply migrations at startup. Future Compose configuration will make the API depend on successful completion of this one-shot migrator after the PostgreSQL health check passes.
 
 ## Frontend image
 
@@ -77,7 +91,7 @@ PostgreSQL will use a named volume mounted at `postgres_data:/var/lib/postgresql
 
 The implemented defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`. The expiry interval and batch size must be positive integers; invalid values fail API startup.
 
-The full command is not runnable yet because the frontend Dockerfile, migration service, and final multi-service Compose wiring have not been created. The current Compose file contains the PostgreSQL 18 service only. The backend image can be built independently with the command above, and the frontend can be run independently with the commands below.
+The full command is not runnable yet because final multi-service Compose wiring has not been created. The current Compose file contains the PostgreSQL 18 service only. The API and migrator images can be built independently with the commands above, and the frontend can be run independently with the commands below.
 
 ## Frontend development
 
@@ -103,13 +117,14 @@ dotnet restore backend/SchoolAdmission.sln
 dotnet build backend/SchoolAdmission.sln
 dotnet test backend/SchoolAdmission.sln
 docker build -f backend/Dockerfile -t school-admission-api:local .
+docker build --target migrator -f backend/Dockerfile -t school-admission-migrator:local .
 npm ci --prefix frontend
 npm run build --prefix frontend
 npm run test --prefix frontend -- --run
 docker build -f frontend/Dockerfile -t school-admission-frontend:local .
 ```
 
-The current backend test project includes 90 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, and concurrency tests. The frontend has 50 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
+The current backend test project includes 100 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, concurrency, direct migrator, and executable-process migration tests. The frontend has 50 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
 
 ## End-to-end testing
 
@@ -158,12 +173,13 @@ AI_USAGE.md               AI-assisted development record
 | Frontend student and administrator workflows | Phase 6A/6B/6C complete; Phase 6D E2E complete; frontend image complete; CI/deployment remain |
 | PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
 | Backend API Docker image | Phase 7B complete; runtime smoke-verified; full Compose integration remains |
+| EF Core migration service/image | Phase 7D complete; disposable PostgreSQL runtime-verified; full Compose dependency wiring remains |
 | Frontend Docker image | Phase 7C complete; runtime smoke verification performed; full Compose integration remains |
 | Docker Compose database service | Complete; full application stack not started |
-| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 50 Vitest/RTL tests plus Playwright E2E coverage |
+| Automated tests | 94 backend tests pass, including four migrator tests; the opt-in 1,000-request stress test also passes; frontend has 50 Vitest/RTL tests plus Playwright E2E coverage |
 | CI/CD workflows | Not started |
 
-Do not treat the current repository as a complete runnable application until the outstanding migration service, full Compose, and CI work is complete and verified.
+Do not treat the current repository as a complete runnable application until the outstanding full Compose and CI work is complete and verified.
 
 ## Background expiry worker
 

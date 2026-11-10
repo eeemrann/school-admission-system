@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\SchoolAdmission.Application\SchoolAdmission.Application.csproj" />
     <ProjectReference Include="..\..\src\SchoolAdmission.Domain\SchoolAdmission.Domain.csproj" />
     <ProjectReference Include="..\..\src\SchoolAdmission.Infrastructure\SchoolAdmission.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\SchoolAdmission.Migrator\SchoolAdmission.Migrator.csproj" />
   </ItemGroup>
 
 </Project>

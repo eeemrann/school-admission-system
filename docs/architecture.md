@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, read-only class details, and workflow tests. Phase 6D adds real-browser Playwright coverage against disposable PostgreSQL infrastructure and dialog accessibility regression coverage. Phase 7B adds the multi-stage backend API image and Phase 7C adds the multi-stage React/Nginx frontend image. The migration service, full Compose deployment, and CI remain future implementation stages.
+This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, read-only class details, and workflow tests. Phase 6D adds real-browser Playwright coverage against disposable PostgreSQL infrastructure and dialog accessibility regression coverage. Phase 7B adds the multi-stage backend API image, Phase 7C adds the multi-stage React/Nginx frontend image, and Phase 7D adds the dedicated one-shot EF Core migrator image. Full Compose deployment and CI remain future implementation stages.
 
 ## Runtime boundaries
 
@@ -151,7 +151,7 @@ The image does not apply EF Core migrations. The API exposes `/health` as a proc
 The final Compose stack will define:
 
 - `db`: PostgreSQL 18 with the named volume mount `postgres_data:/var/lib/postgresql` and a health check. The legacy `/var/lib/postgresql/data` mount is not used with PostgreSQL 18;
-- `migrate`: a future one-shot migration service that runs reviewed EF Core migrations before the API starts;
+- `migrate`: the one-shot `SchoolAdmission.Migrator` image that runs reviewed EF Core migrations before the API starts;
 - `api`: the ASP.NET Core image, configured with the database connection and `HOLD_DURATION_SECONDS`, published on host port 8080;
 - `frontend`: the React/Vite production-serving image, configured with the browser-facing API URL `http://localhost:8080` and published on host port 5173.
 
@@ -181,6 +181,13 @@ dotnet ef database update \
   --context SchoolAdmission.Infrastructure.Persistence.SchoolAdmissionDbContext
 ```
 
+The supported deployment path is the dedicated migrator executable or its Docker target. It reads `ConnectionStrings__DefaultConnection`, explicitly opens PostgreSQL, classifies structured Npgsql/PostgreSQL/socket failures, retries only transient connectivity failures up to 15 times with a two-second delay, and applies existing migrations with `Database.MigrateAsync()`. Permanent connection-string, authentication, authorization, missing-database, and permanent DNS failures return code `2`; exhausted transient connectivity returns `3`; migration execution failures return `4`; and cancellation returns `130`. `MIGRATOR_MAX_ATTEMPTS` and `MIGRATOR_RETRY_DELAY_MILLISECONDS` are bounded overrides for disposable verification only, with production defaults unchanged. The API does not call `Migrate`, `MigrateAsync`, `EnsureCreated`, or `EnsureDeleted` during startup.
+
+```bash
+dotnet run --project backend/src/SchoolAdmission.Migrator/SchoolAdmission.Migrator.csproj
+docker build --target migrator -f backend/Dockerfile -t school-admission-migrator:local .
+```
+
 To add a future migration, use an intentional name and the same project/context boundaries:
 
 ```bash
@@ -204,6 +211,8 @@ Migrations are applied incrementally. Do not delete or recreate the database as 
 - Frontend component/integration tests: administrator dashboard aggregation, class listing/search, class creation validation/invalidation, class details/navigation, student identifier persistence, hold countdown, automatic status updates, confirmation, cancellation, history, loading, and API errors using Vitest and React Testing Library.
 - Browser E2E tests: Playwright/Chromium runs the Vite frontend against the actual ASP.NET Core API and a fresh PostgreSQL 18 container. The setup applies the existing EF Core migrations, configures a short E2E-only hold duration and worker interval, and never uses the development database or its named volume. Student workflows cover identity selection/isolation, class browsing, reservation, server-derived countdowns, confirmation, cancellation, refresh recovery, duplicate/no-seat conflicts, worker expiry, and seat release. Administrator workflows cover live metrics, case-insensitive trimmed search, class creation/validation, details/not-found handling, and responsive navigation.
 - Dialog accessibility tests: shared dialogs trap Tab focus, close on Escape, restore the invoking element's focus, expose semantic dialog names, and retain visible keyboard focus styles.
+- Migrator tests: direct runner tests retain fast unit/integration coverage, while executable-process tests invoke the built `dotnet SchoolAdmission.Migrator.dll` for missing configuration, initial and repeated migration, bounded unavailability, controlled migration failure, and POSIX SIGTERM cancellation. These use disposable PostgreSQL 18 where persistence is required and verify exit codes, migration history, application tables, and credential-free diagnostics. The migrator project reference causes the executable and runtime configuration to be built with the test project.
+- API migration-separation tests: API startup against an empty disposable database verifies that `__EFMigrationsHistory`, `admission_classes`, and `admission_holds` are all absent.
 - Container smoke checks: Compose configuration, health/readiness, API reachability on port 8080, and frontend reachability.
 
 The Playwright command is documented in the repository README and is run from `frontend/` with `npm run e2e`. It creates an isolated, no-volume database on host port 55433 by default, gives the disposable container a unique run ID and ownership label, records its actual container ID, runs `dotnet tool restore` and `dotnet ef database update` against that database, starts the API on port 5085 with a 15-second E2E hold duration and one-second expiry polling, and lets Playwright manage the Vite server on port 5175. `E2E_DB_PORT`, `E2E_API_PORT`, and `E2E_FRONTEND_PORT` may override those ports. The setup checks that ports are free and fails safely instead of taking over an existing service. Runtime state is written atomically and validated during teardown; Docker and API cleanup use bounded commands and only current-run ownership metadata. HTML reports, screenshots, videos, and traces are written to ignored Playwright output directories. The `postgres:18` tag remains unpinned until a verified multi-platform manifest digest is approved for CI.

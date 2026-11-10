@@ -38,11 +38,15 @@ COPY backend/src/SchoolAdmission.Domain/SchoolAdmission.Domain.csproj ./backend/
 COPY backend/src/SchoolAdmission.Application/SchoolAdmission.Application.csproj ./backend/src/SchoolAdmission.Application/
 COPY backend/src/SchoolAdmission.Infrastructure/SchoolAdmission.Infrastructure.csproj ./backend/src/SchoolAdmission.Infrastructure/
 COPY backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj ./backend/src/SchoolAdmission.Api/
+COPY backend/src/SchoolAdmission.Migrator/SchoolAdmission.Migrator.csproj ./backend/src/SchoolAdmission.Migrator/
 
 RUN dotnet restore backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj
+RUN dotnet restore backend/src/SchoolAdmission.Migrator/SchoolAdmission.Migrator.csproj
 
 COPY .editorconfig ./
 COPY backend ./backend
+
+FROM build AS api-build
 
 RUN dotnet publish backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj \
     --configuration Release \
@@ -50,16 +54,34 @@ RUN dotnet publish backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj \
     --output /app/publish \
     /p:UseAppHost=false
 
+FROM build AS migrator-build
+
+RUN dotnet publish backend/src/SchoolAdmission.Migrator/SchoolAdmission.Migrator.csproj \
+    --configuration Release \
+    --no-restore \
+    --output /app/migrator-publish \
+    /p:UseAppHost=false
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS runtime
 
 WORKDIR /app
+
+FROM runtime AS migrator
+
+COPY --from=migrator-build /app/migrator-publish ./
+
+USER app
+
+ENTRYPOINT ["dotnet", "SchoolAdmission.Migrator.dll"]
+
+FROM runtime AS api
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_URLS=http://+:8080
 
 EXPOSE 8080
 
-COPY --from=build /app/publish ./
+COPY --from=api-build /app/publish ./
 
 # The official ASP.NET runtime image provides the unprivileged `app` user.
 USER app
