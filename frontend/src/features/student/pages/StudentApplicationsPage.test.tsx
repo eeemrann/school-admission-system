@@ -11,7 +11,7 @@ const heldApplication = {
   classId: "c_22222222222222222222222222222222",
   className: "Class 7 - Day Shift",
   status: "HELD",
-  expiresAt: "2026-11-10T12:10:00.000Z",
+  expiresAt: "2099-11-10T12:10:00.000Z",
 };
 
 describe("StudentApplicationsPage", () => {
@@ -175,9 +175,13 @@ describe("StudentApplicationsPage", () => {
     const authoritativeHold = new Promise<Response>((resolve) => {
       resolveHold = resolve;
     });
+    const countdownApplication = {
+      ...heldApplication,
+      expiresAt: "2026-11-10T12:10:00.000Z",
+    };
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse([heldApplication]))
+      .mockResolvedValueOnce(jsonResponse([countdownApplication]))
       .mockReturnValueOnce(authoritativeHold);
     vi.stubGlobal("fetch", fetchMock);
     renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });

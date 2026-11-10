@@ -32,6 +32,9 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.*.example
+.e2e-tmp/
+frontend/playwright-report/
+frontend/test-results/
 secrets/
 **/secrets/
 *.secret

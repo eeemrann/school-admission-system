@@ -21,7 +21,7 @@ const createdHold = {
   classId: availableClass.id,
   studentId: "student-a",
   status: "HELD",
-  expiresAt: "2026-11-10T12:10:00.000Z",
+  expiresAt: "2099-11-10T12:10:00.000Z",
 };
 
 describe("StudentClassesPage admission creation", () => {

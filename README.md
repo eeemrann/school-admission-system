@@ -1,13 +1,13 @@
 # School Admission System
 
-Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, and the Phase 6A/6B/6C React student and administrator workflows. Docker images, the full Compose application, CI workflows, and deployment are still pending.
+Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the Phase 6A/6B/6C React student and administrator workflows, and the Phase 6D real-browser E2E harness. Docker images, the full Compose application, CI workflows, and deployment are still pending.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
 ## Planned technology stack
 
 - Backend: C#, .NET 10 LTS, ASP.NET Core Web API, Entity Framework Core 10, PostgreSQL 18, and Swagger/OpenAPI.
-- Frontend: React 19, TypeScript, Vite, Tailwind CSS, React Router, Vitest, and React Testing Library.
+- Frontend: React 19, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, Vitest, React Testing Library, and Playwright/Chromium for browser E2E coverage.
 - Infrastructure: Docker, Docker Compose V2, GitHub Actions, and a future GitHub Container Registry (GHCR) release path.
 
 ## Planned architecture
@@ -85,7 +85,26 @@ npm run build --prefix frontend
 npm run test --prefix frontend -- --run
 ```
 
-The current backend test project includes 90 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, and concurrency tests. The frontend has 40 passing Vitest/React Testing Library tests. An opt-in stress test is documented below.
+The current backend test project includes 90 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, and concurrency tests. The frontend has 47 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
+
+## End-to-end testing
+
+The Phase 6D Playwright suite is deliberately separate from the development database. It starts a disposable PostgreSQL 18 container without a volume, assigns it a unique run ID and ownership label, records its actual container ID, applies the committed EF Core migrations, starts the API with a 15-second E2E hold duration and one-second expiry polling, and serves the Vite frontend through a local `/api` development proxy. Cleanup verifies both the recorded container ID and ownership label before stopping it, and uses bounded API process-group termination. Existing development containers and the `postgres_data` volume are not stopped, reset, or modified.
+
+Prerequisites are Docker, Node/npm, a restored .NET SDK/toolchain, and Chromium installed for Playwright. From the repository root:
+
+```bash
+cd frontend
+npm install
+npx playwright install chromium
+npm run e2e
+```
+
+`npm run e2e` is the single-command workflow. It produces `frontend/playwright-report/` and failure diagnostics under `frontend/test-results/`. The default disposable ports are PostgreSQL `55433`, API `5085`, and frontend `5175`; override them with `E2E_DB_PORT`, `E2E_API_PORT`, and `E2E_FRONTEND_PORT` if necessary. The setup fails rather than taking over an occupied port. Use `npm run e2e:report` to open the HTML report after a run.
+
+The browser scenarios cover student browse/hold/confirm/cancel/history/refresh/identity isolation, worker-driven expiry and seat release observed through a non-reconciling class read, duplicate and browser-level no-seat conflicts, countdown-triggered authoritative hold refresh, repeated terminal mutations, administrator metrics/search/create/details, malformed and unknown IDs, and responsive navigation. Test data uses unique class names and student IDs within a fresh database, so tests do not depend on execution order. The E2E harness is ready to be called by a future CI workflow; CI orchestration itself remains outside Phase 6D.
+
+If a default E2E port is occupied, set the corresponding `E2E_DB_PORT`, `E2E_API_PORT`, or `E2E_FRONTEND_PORT` variable for the command. If the Playwright browser cache is not writable, set `PLAYWRIGHT_BROWSERS_PATH` to a writable directory before installing Chromium. In disk-quota-limited environments, set `TMPDIR`, `TEMP`, and `TMP` to an ignored writable directory such as `.e2e-tmp` so .NET/MSBuild temporary files stay out of the system temp area. The local `postgres:18` tag currently resolves to a verified platform image digest during execution, but a multi-platform manifest digest has not been independently approved; digest pinning is deferred to CI hardening.
 
 ## Repository layout
 
@@ -112,10 +131,10 @@ AI_USAGE.md               AI-assisted development record
 | Hold creation/read API and request-time expiry reconciliation | Complete |
 | Confirmation, cancellation, and student history | Complete for milestone 5B |
 | Background expiry worker | Complete for the current backend milestone |
-| Frontend student and administrator workflows | Phase 6A/6B/6C complete; Docker/CI/deployment remain |
+| Frontend student and administrator workflows | Phase 6A/6B/6C complete; Phase 6D E2E complete; Docker/CI/deployment remain |
 | PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
 | Docker Compose database service | Complete; full application stack not started |
-| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 40 Vitest/RTL tests |
+| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 47 Vitest/RTL tests plus Playwright E2E coverage |
 | CI/CD workflows | Not started |
 
 Do not treat the current repository as a complete runnable application until the outstanding Docker image, full Compose, and CI work is complete and verified.
