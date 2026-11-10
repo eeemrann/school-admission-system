@@ -81,9 +81,9 @@ export async function getHold(request: APIRequestContext, holdId: string): Promi
 }
 
 export async function selectStudent(page: Page, studentId: string): Promise<void> {
-  const input = page.getByLabel("Student ID");
+  const input = page.getByLabel("Birth Registration Number");
   await input.fill(studentId);
-  await page.getByRole("button", { name: /use this id|change id/i }).click();
+  await page.getByRole("button", { name: /use this number|change number/i }).click();
   await expectValue(input, studentId);
 }
 

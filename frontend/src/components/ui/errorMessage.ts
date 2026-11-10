@@ -20,10 +20,10 @@ export function getErrorMessage(error: unknown): string {
 }
 
 const apiCodeMessages: Record<string, string> = {
-  STUDENT_ID_REQUIRED: "Select a student ID before continuing.",
+  STUDENT_ID_REQUIRED: "Select a birth registration number before continuing.",
   CLASS_NOT_FOUND: "This class is no longer available.",
   HOLD_NOT_FOUND: "This application could not be found.",
-  HOLD_OWNER_FORBIDDEN: "This application belongs to a different student ID.",
+  HOLD_OWNER_FORBIDDEN: "This application belongs to a different selected student.",
   NO_SEATS_AVAILABLE: "No seats are available now. Refresh the class list and try again.",
   DUPLICATE_ACTIVE_APPLICATION: "This student already has an active application for this class.",
   HOLD_EXPIRED: "This reservation has expired and can no longer be confirmed.",

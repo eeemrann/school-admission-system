@@ -24,7 +24,7 @@ export function StudentApplicationsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        description="Review applications associated with the selected assignment-level student ID."
+        description="Review applications associated with the selected birth registration number."
         eyebrow="Student portal"
         title="Application history"
         actions={
@@ -42,9 +42,9 @@ export function StudentApplicationsPage() {
       <StudentIdentitySelector />
       {!studentId ? (
         <EmptyState
-          description="Enter a student ID above to load application history from the API."
+          description="Enter a birth registration number above to load application history from the API."
           icon={ClipboardList}
-          title="Select a student ID"
+          title="Select a birth registration number"
         />
       ) : null}
       {applicationsQuery.isPending ? (

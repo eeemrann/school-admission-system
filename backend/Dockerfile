@@ -62,11 +62,11 @@ RUN dotnet publish backend/src/SchoolAdmission.Migrator/SchoolAdmission.Migrator
     --output /app/migrator-publish \
     /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS runtime-base
 
 WORKDIR /app
 
-FROM runtime AS migrator
+FROM runtime-base AS migrator
 
 COPY --from=migrator-build /app/migrator-publish ./
 
@@ -74,7 +74,15 @@ USER app
 
 ENTRYPOINT ["dotnet", "SchoolAdmission.Migrator.dll"]
 
-FROM runtime AS api
+FROM runtime-base AS api
+
+# Compose uses curl for the HTTP readiness probe. Keep this dependency in the
+# API runtime only so the one-shot migrator remains minimal.
+USER root
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes curl \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_URLS=http://+:8080

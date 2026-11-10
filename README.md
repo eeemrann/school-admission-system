@@ -1,34 +1,34 @@
 # School Admission System
 
-Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the Phase 6A/6B/6C React student and administrator workflows, the Phase 6D real-browser E2E harness, the Phase 7B backend API image, the Phase 7C frontend image, and the Phase 7D dedicated EF Core migration image. Full Compose integration, CI workflows, and deployment are still pending.
+This repository contains a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the React student and administrator workflows, the Playwright E2E harness, production Docker images, and a complete local Docker Compose deployment. CI workflows and public deployment remain future work.
 
-The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
+The system is a professional school admission workflow for administrators, students, and parents. Administrators create classes and configure capacity. Students/parents browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints protect capacity during concurrent admission requests.
 
-## Planned technology stack
+## Technology stack
 
 - Backend: C#, .NET 10 LTS, ASP.NET Core Web API, Entity Framework Core 10, PostgreSQL 18, and Swagger/OpenAPI.
 - Frontend: React 19, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, Vitest, React Testing Library, and Playwright/Chromium for browser E2E coverage.
 - Infrastructure: Docker, Docker Compose V2, GitHub Actions, and a future GitHub Container Registry (GHCR) release path.
 
-## Planned architecture
+## Architecture
 
 The repository will contain three application runtime services and one one-shot deployment service:
 
 1. PostgreSQL, with a named Docker volume for application data.
 2. An ASP.NET Core API at `http://localhost:8080`.
-3. A Vite-served React frontend at the documented local frontend URL, planned as `http://localhost:5173`.
+3. A Vite-built React frontend served at the documented local frontend URL, `http://localhost:5173`.
 4. A migration service that applies existing EF Core migrations before the API starts.
 
 The frontend will communicate only with the REST API. The API owns validation, application state transitions, expiry reconciliation, and seat allocation. Request-time reconciliation and the implemented hosted background expiry worker use the same class-first transaction strategy. PostgreSQL enforces persistence and key invariants. See [docs/architecture.md](docs/architecture.md) and [ASSUMPTIONS.md](ASSUMPTIONS.md).
 
 The public API is fixed and documented in [docs/api-contract.md](docs/api-contract.md). No authentication is required for this assignment; student identity is supplied by the `X-Student-Id` request header.
 
-## Planned local URLs
+## Local URLs
 
-| Service | Browser-facing URL | Purpose |
-| --- | --- | --- |
-| Frontend | `http://localhost:5173` | React administrator and student/parent UI |
-| Backend API | `http://localhost:8080` | REST API and Swagger/OpenAPI |
+| Service     | Browser-facing URL      | Purpose                                   |
+| ----------- | ----------------------- | ----------------------------------------- |
+| Frontend    | `http://localhost:5173` | React administrator and student/parent UI |
+| Backend API | `http://localhost:8080` | REST API and Swagger/OpenAPI              |
 
 Docker-internal names such as `api` and `db` are used only for container-to-container communication. A browser uses the published `localhost` URLs above.
 
@@ -42,7 +42,7 @@ docker build -f backend/Dockerfile -t school-admission-api:local .
 
 The build uses the official Microsoft .NET 10 SDK image as its base and installs the repository-pinned SDK `10.0.114` from Microsoft's published archive with SHA-512 verification. The final image uses the official ASP.NET Core `10.0.14` runtime, contains only published API output, runs as the unprivileged `app` user, and listens on container port `8080`.
 
-The image does not apply EF Core migrations. Inject `ConnectionStrings__DefaultConnection`, `HOLD_DURATION_SECONDS`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS`, and `HOLD_EXPIRY_BATCH_SIZE` at runtime. The API's `/health` endpoint is process liveness; `/health/ready` verifies PostgreSQL connectivity. A reliable image-level HTTP health probe is deferred to the Compose integration phase because the minimal runtime image does not include `curl` or `wget`.
+The image does not apply EF Core migrations. Inject `ConnectionStrings__DefaultConnection`, `HOLD_DURATION_SECONDS`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS`, and `HOLD_EXPIRY_BATCH_SIZE` at runtime. The API's `/health` endpoint is process liveness; `/health/ready` verifies PostgreSQL connectivity. The API runtime includes `curl` solely for the Compose readiness probe and still runs the application as the non-root `app` user.
 
 ## EF Core migration image
 
@@ -55,7 +55,7 @@ docker build --target migrator -f backend/Dockerfile -t school-admission-migrato
 
 The migrator references the Infrastructure project and applies only committed EF Core migrations with `Database.MigrateAsync()`. It explicitly opens PostgreSQL before reading migration metadata, classifies structured PostgreSQL/Npgsql/socket failures, and retries only transient connectivity failures. Production defaults are 15 attempts with a two-second delay; bounded `MIGRATOR_MAX_ATTEMPTS` and `MIGRATOR_RETRY_DELAY_MILLISECONDS` overrides are available for disposable verification environments. Missing or permanent configuration failures exit with code `2`, exhausted transient database-unavailability exits with code `3`, migration failures exit with code `4`, and cancellation exits with code `130`. Connection strings are injected at runtime; they are never embedded in the image or written to logs. The image has no HTTP port, contains only the published migrator output, and runs as the non-root `app` user.
 
-The API does not apply migrations at startup. Future Compose configuration will make the API depend on successful completion of this one-shot migrator after the PostgreSQL health check passes.
+The API does not apply migrations at startup. The root Compose configuration starts the migrator after PostgreSQL becomes healthy and starts the API only after the migrator exits successfully.
 
 ## Frontend image
 
@@ -67,31 +67,27 @@ docker build -f frontend/Dockerfile -t school-admission-frontend:local .
 
 The multi-stage build uses Node.js 22 and `npm ci` to produce the Vite `dist/` output, then serves only those static files with `nginxinc/nginx-unprivileged:stable-alpine` on container port `8080`. The image runs as the unprivileged `nginx` user, supports BrowserRouter refreshes through an `index.html` fallback, and sends same-origin `/api/*` requests through Nginx to the Docker-internal `api:8080` service after stripping the `/api` prefix. The exact `/api` path is intentionally a 404 rather than an SPA fallback; `/api/` and its descendants remain proxy paths. `VITE_API_BASE_URL` is a build-time Vite value; the image default is `/api`, while local development may continue using the documented host API URL or the Vite proxy.
 
-## Planned local startup
+## Local Docker startup
 
-The current persistence milestone can be started and verified with:
+Copy the safe environment template and replace the local password placeholder:
 
 ```bash
-docker compose up -d db
-dotnet tool restore
-dotnet ef database update \
-  --project backend/src/SchoolAdmission.Infrastructure/SchoolAdmission.Infrastructure.csproj \
-  --startup-project backend/src/SchoolAdmission.Api/SchoolAdmission.Api.csproj
+cp .env.example .env
 ```
 
-After the remaining implementation is complete and reviewed, the intended single-command startup will be:
+Start the complete application from the repository root:
 
 ```bash
 docker compose up --build
 ```
 
-The API will be available at `http://localhost:8080`, with Swagger/OpenAPI exposed by the API service. The frontend will be available at `http://localhost:5173` unless the final Compose configuration documents a different port.
+The API is available at `http://localhost:8080`, and the frontend is available at `http://localhost:5173`. Both ports can be changed with `API_HOST_PORT` and `FRONTEND_HOST_PORT` in `.env`.
 
-PostgreSQL will use a named volume mounted at `postgres_data:/var/lib/postgresql`, so application data and application history survive container restarts. The legacy PostgreSQL data mount `/var/lib/postgresql/data` is not used for the planned PostgreSQL 18 service.
+PostgreSQL uses the new named volume `school-admission-assignment_postgres_data`, mounted at `postgres_data:/var/lib/postgresql`. It is separate from the protected `school-admission-system_postgres_data` volume. The legacy PostgreSQL data mount `/var/lib/postgresql/data` is not used.
 
 The implemented defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`. The expiry interval and batch size must be positive integers; invalid values fail API startup.
 
-The full command is not runnable yet because final multi-service Compose wiring has not been created. The current Compose file contains the PostgreSQL 18 service only. The API and migrator images can be built independently with the commands above, and the frontend can be run independently with the commands below.
+Compose waits for PostgreSQL health, applies existing EF Core migrations in the one-shot migrator, waits for successful migration completion, and then starts the API and frontend. The API and frontend health checks use `curl` and Alpine BusyBox `wget`, respectively. Stop the application without deleting its persistent volume with `docker compose down` or `docker compose stop`; never use `docker compose down -v` for normal shutdown.
 
 ## Frontend development
 
@@ -147,7 +143,7 @@ If a default E2E port is occupied, set the corresponding `E2E_DB_PORT`, `E2E_API
 
 ## Repository layout
 
-Planned project structure:
+Project structure:
 
 ```text
 backend/                  ASP.NET Core API, domain, persistence, and tests
@@ -162,24 +158,24 @@ AI_USAGE.md               AI-assisted development record
 
 ## Development status
 
-| Area | Status |
-| --- | --- |
-| Foundation documentation | Complete for the current phase |
-| Backend solution/skeleton | Complete |
-| Class management API | Complete for the current milestone |
-| Hold creation/read API and request-time expiry reconciliation | Complete |
-| Confirmation, cancellation, and student history | Complete for milestone 5B |
-| Background expiry worker | Complete for the current backend milestone |
-| Frontend student and administrator workflows | Phase 6A/6B/6C complete; Phase 6D E2E complete; frontend image complete; CI/deployment remain |
-| PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
-| Backend API Docker image | Phase 7B complete; runtime smoke-verified; full Compose integration remains |
-| EF Core migration service/image | Phase 7D complete; disposable PostgreSQL runtime-verified; full Compose dependency wiring remains |
-| Frontend Docker image | Phase 7C complete; runtime smoke verification performed; full Compose integration remains |
-| Docker Compose database service | Complete; full application stack not started |
-| Automated tests | 94 backend tests pass, including four migrator tests; the opt-in 1,000-request stress test also passes; frontend has 50 Vitest/RTL tests plus Playwright E2E coverage |
-| CI/CD workflows | Not started |
+| Area                                                          | Status                                                                                                                                                            |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Foundation documentation                                      | Complete for the current phase                                                                                                                                    |
+| Backend solution/skeleton                                     | Complete                                                                                                                                                          |
+| Class management API                                          | Complete for the current milestone                                                                                                                                |
+| Hold creation/read API and request-time expiry reconciliation | Complete                                                                                                                                                          |
+| Confirmation, cancellation, and student history               | Complete for milestone 5B                                                                                                                                         |
+| Background expiry worker                                      | Complete for the current backend milestone                                                                                                                        |
+| Frontend student and administrator workflows                  | Phase 6A/6B/6C complete; Phase 6D E2E complete; frontend image complete; CI/deployment remain                                                                     |
+| PostgreSQL persistence/schema/migration                       | Complete for the foundation milestone                                                                                                                             |
+| Backend API Docker image                                      | Complete; runtime readiness probe is available for Compose                                                                                                        |
+| EF Core migration service/image                               | Complete; Compose runs it before the API                                                                                                                          |
+| Frontend Docker image                                         | Complete; Compose serves it on the documented frontend port                                                                                                       |
+| Docker Compose application                                    | Complete local stack with separate persistent volume; runtime verification reported below                                                                         |
+| Automated tests                                               | 100 backend tests pass, including migrator tests; the opt-in 1,000-request stress test also passes; frontend has 50 Vitest/RTL tests plus Playwright E2E coverage |
+| CI/CD workflows                                               | Not started                                                                                                                                                       |
 
-Do not treat the current repository as a complete runnable application until the outstanding full Compose and CI work is complete and verified.
+The application is runnable through Docker Compose after the documented checks pass. CI/CD and public deployment remain outside this submission.
 
 ## Background expiry worker
 

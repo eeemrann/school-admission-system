@@ -45,7 +45,7 @@ export function AppLayout() {
             ))}
           </nav>
           <div className="order-2 flex items-center gap-2 sm:order-3">
-            <span className="hidden text-xs text-slate-500 sm:inline">Student ID</span>
+            <span className="hidden text-xs text-slate-500 sm:inline">Registration number</span>
             <span
               className="max-w-36 truncate rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700"
               title={studentId ?? "Not selected"}
@@ -59,8 +59,8 @@ export function AppLayout() {
         <Outlet />
       </main>
       <footer className="mx-auto max-w-7xl px-4 pb-8 text-xs text-slate-500 sm:px-6 lg:px-8">
-        Student IDs identify the current browser session for this assignment; they are not
-        authentication.
+        Birth registration numbers identify the current browser session for this assignment; they
+        are not authentication.
       </footer>
     </div>
   );

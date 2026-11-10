@@ -190,10 +190,10 @@ describe("StudentClassesPage admission creation", () => {
       screen.getByTitle("The server remains authoritative for reservation expiry"),
     ).toHaveTextContent(/^\d{2}:\d{2}$/);
 
-    fireEvent.change(screen.getByLabelText("Student ID"), {
+    fireEvent.change(screen.getByLabelText("Birth Registration Number"), {
       target: { value: "student-b" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Change ID" }));
+    fireEvent.click(screen.getByRole("button", { name: "Change number" }));
 
     expect(screen.queryByText("Seat temporarily reserved")).not.toBeInTheDocument();
     expect(screen.queryByText(holdForTest.holdId)).not.toBeInTheDocument();
@@ -224,10 +224,10 @@ describe("StudentClassesPage admission creation", () => {
     fireEvent.click(await screen.findByRole("button", { name: /apply for admission/i }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
-    fireEvent.change(screen.getByLabelText("Student ID"), {
+    fireEvent.change(screen.getByLabelText("Birth Registration Number"), {
       target: { value: "student-b" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Change ID" }));
+    fireEvent.click(screen.getByRole("button", { name: "Change number" }));
     resolveHold?.(jsonResponse(createdHold, 201));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));

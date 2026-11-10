@@ -26,17 +26,17 @@ export function StudentIdentitySelector() {
           <Input
             error={error}
             hint="This is an assignment-level identity selector, not a secure login or proof of identity."
-            label="Student ID"
+            label="Birth Registration Number"
             onChange={(event) => {
               setDraft(event.target.value);
               if (error) setError(undefined);
             }}
-            placeholder="Enter your registration ID"
+            placeholder="Enter your birth registration number"
             value={draft}
           />
         </div>
         <div className="flex gap-2">
-          <Button type="submit">{studentId ? "Change ID" : "Use this ID"}</Button>
+          <Button type="submit">{studentId ? "Change number" : "Use this number"}</Button>
           {studentId ? (
             <Button type="button" variant="ghost" onClick={clearStudentId}>
               Clear

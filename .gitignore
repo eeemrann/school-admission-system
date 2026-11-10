@@ -30,6 +30,8 @@ Thumbs.db
 .env
 .env.local
 .env.*
+.env.*.local
+.env.supabase
 !.env.example
 !.env.*.example
 .e2e-tmp/

@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, read-only class details, and workflow tests. Phase 6D adds real-browser Playwright coverage against disposable PostgreSQL infrastructure and dialog accessibility regression coverage. Phase 7B adds the multi-stage backend API image, Phase 7C adds the multi-stage React/Nginx frontend image, and Phase 7D adds the dedicated one-shot EF Core migrator image. Full Compose deployment and CI remain future implementation stages.
+This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, complete local Compose deployment, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, read-only class details, and workflow tests. Phase 6D adds real-browser Playwright coverage against disposable PostgreSQL infrastructure and dialog accessibility regression coverage. Phase 7B adds the multi-stage backend API image, Phase 7C adds the multi-stage React/Nginx frontend image, and Phase 7D adds the dedicated one-shot EF Core migrator image. CI remains future work.
 
 ## Runtime boundaries
 
@@ -122,15 +122,15 @@ The implemented hold creation, hold-read, confirmation, cancellation, and studen
 
 ## Browser and Docker networking
 
-The final Compose project will place `api` and `db` on a private Docker network. The API connects to PostgreSQL using the Docker-internal hostname `db` and PostgreSQL's container port. The browser is outside that network and connects through published host ports:
+The root Compose project places `db`, `migrator`, `api`, and `frontend` on a private Docker network. The API and migrator connect to PostgreSQL using the Docker-internal hostname `db` and PostgreSQL's container port. The browser is outside that network and connects through published localhost ports:
 
-| Caller | Destination | URL/hostname |
-| --- | --- | --- |
-| Browser | Frontend | `http://localhost:5173` |
-| Browser | API | `http://localhost:8080` |
+| Caller        | Destination          | URL/hostname                            |
+| ------------- | -------------------- | --------------------------------------- |
+| Browser       | Frontend             | `http://localhost:5173`                 |
+| Browser       | API                  | `http://localhost:8080`                 |
 | API container | PostgreSQL container | `db` plus the PostgreSQL container port |
 
-The `api` and `db` service names are not browser-facing URLs. CORS will allow the documented frontend origin to call the documented API origin. The API must bind to its container interface so the host-published port is reachable.
+The `api` and `db` service names are not browser-facing URLs. The production frontend uses same-origin `/api` requests and Nginx proxies them to `api:8080`; the browser never resolves Docker-only names. The API is also published locally on port `8080` for direct API and Swagger access. Database access is restricted to localhost when the optional database host port is published.
 
 ## Backend container image
 
@@ -144,20 +144,20 @@ The root context is required because `global.json`, `Directory.Build.props`, and
 
 The final stage uses `mcr.microsoft.com/dotnet/aspnet:10.0.14`, copies only `/app/publish`, runs as the built-in unprivileged `app` user, and listens on container port `8080` through `ASPNETCORE_URLS=http://+:8080`. No connection string, secret, or `.env` file is embedded. Runtime configuration is injected through environment variables.
 
-The image does not apply EF Core migrations. The API exposes `/health` as a process-liveness endpoint and `/health/ready` as a PostgreSQL connectivity/readiness endpoint. The selected minimal runtime image does not contain `curl` or `wget`, so an image-level HTTP `HEALTHCHECK` is deferred until the Compose phase selects and verifies a probe strategy.
+The image does not apply EF Core migrations. The API exposes `/health` as a process-liveness endpoint and `/health/ready` as a PostgreSQL connectivity/readiness endpoint. The API runtime includes the small `curl` package solely for the Compose readiness probe and still runs the application as the non-root `app` user. The frontend health check uses BusyBox `wget` from the Alpine-based unprivileged Nginx image.
 
 ## Docker deployment architecture
 
-The final Compose stack will define:
+The root Compose stack defines:
 
 - `db`: PostgreSQL 18 with the named volume mount `postgres_data:/var/lib/postgresql` and a health check. The legacy `/var/lib/postgresql/data` mount is not used with PostgreSQL 18;
-- `migrate`: the one-shot `SchoolAdmission.Migrator` image that runs reviewed EF Core migrations before the API starts;
+- `migrator`: the one-shot `SchoolAdmission.Migrator` image that runs reviewed EF Core migrations before the API starts;
 - `api`: the ASP.NET Core image, configured with the database connection and `HOLD_DURATION_SECONDS`, published on host port 8080;
 - `frontend`: the React/Vite production-serving image, configured with the browser-facing API URL `http://localhost:8080` and published on host port 5173.
 
-The future Compose stack should wait for database readiness, run the one-shot `migrate` service, and start the API only after migration succeeds. The API image itself must not apply migrations during startup. Secrets must be supplied through environment configuration and must not be committed. The Phase 7C frontend image serves the Vite output with unprivileged Nginx on port `8080`, provides BrowserRouter fallback handling, and proxies same-origin `/api/` requests to `api:8080`; only its full multi-service Compose integration remains future work.
+Compose waits for database readiness, runs the one-shot `migrator` service, and starts the API only after migration succeeds. The API image itself must not apply migrations during startup. Secrets are supplied through the untracked `.env` file and are never committed. The Phase 7C frontend image serves the Vite output with unprivileged Nginx on port `8080`, provides BrowserRouter fallback handling, and proxies same-origin `/api/` requests to `api:8080`.
 
-The current Compose file contains only the `db` service for this persistence milestone. It uses PostgreSQL 18, a named `postgres_data` volume mounted at `/var/lib/postgresql`, and the standard host port 5432. If that host port is occupied locally, an untracked Compose override or an alternate local verification port may be used without changing the documented container port or committed defaults.
+The Compose project identity is `school-admission-assignment`. Its volume is explicitly named `school-admission-assignment_postgres_data` and is separate from the protected `school-admission-system_postgres_data` volume. The local database host port defaults to `5432` and can be changed with `POSTGRES_HOST_PORT`; the API and frontend default to `8080` and `5173` respectively.
 
 ## Database migration workflow
 

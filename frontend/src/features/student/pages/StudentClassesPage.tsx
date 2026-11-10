@@ -190,7 +190,7 @@ function ClassCard({
             noSeats
               ? "No seats are currently available"
               : !studentId
-                ? "Select a student ID first"
+                ? "Select a birth registration number first"
                 : undefined
           }
           variant={noSeats ? "secondary" : "primary"}

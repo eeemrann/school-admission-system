@@ -110,9 +110,9 @@ describe("StudentApplicationsPage", () => {
     renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
 
     expect(await screen.findByText("Student A class")).toBeInTheDocument();
-    const identityInput = screen.getByLabelText("Student ID");
+    const identityInput = screen.getByLabelText("Birth Registration Number");
     fireEvent.change(identityInput, { target: { value: "student-b" } });
-    fireEvent.click(screen.getByRole("button", { name: "Change ID" }));
+    fireEvent.click(screen.getByRole("button", { name: "Change number" }));
 
     expect(await screen.findByText("Student B class")).toBeInTheDocument();
     expect(screen.queryByText("Student A class")).not.toBeInTheDocument();
