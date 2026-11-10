@@ -1,0 +1,45 @@
+# Source-control and CI metadata
+.git
+.github
+
+# Local environment files, secrets, and certificates
+.env
+.env.*
+**/.env
+**/.env.*
+secrets/
+**/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+*.secrets
+
+# Build outputs and package caches
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+frontend/.vite/
+frontend/test-results/
+frontend/playwright-report/
+frontend/playwright/.runtime/
+frontend/e2e/.runtime/
+.e2e-tmp/
+
+# Logs, temporary files, and local tooling state
+*.log
+*.tmp
+*.swp
+*.swo
+.cache/
+.idea/
+.vscode/
+docker-data/
+*.tar
+*.tar.gz
+
+# OS-generated files
+.DS_Store
+Thumbs.db

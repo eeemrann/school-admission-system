@@ -21,7 +21,11 @@ indent_style = space
 indent_size = 2
 tab_width = 2
 
-[**/Migrations/*.cs]
+# EF Core generates this migration without the generated-code marker while its
+# constant column arrays trigger CA1861. Keep the exception limited to this
+# exact migration file; other migrations and all unrelated source remain
+# covered by the normal analyzer settings.
+[backend/src/SchoolAdmission.Infrastructure/Persistence/Migrations/20261109184037_InitialCreate.cs]
 dotnet_diagnostic.CA1861.severity = none
 
 [*.{yml,yaml}]

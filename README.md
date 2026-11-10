@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the Phase 6A/6B/6C React student and administrator workflows, and the Phase 6D real-browser E2E harness. Docker images, the full Compose application, CI workflows, and deployment are still pending.
+Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the Phase 6A/6B/6C React student and administrator workflows, the Phase 6D real-browser E2E harness, and the Phase 7B backend API image. The frontend image, full Compose application, CI workflows, and deployment are still pending.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -31,6 +31,18 @@ The public API is fixed and documented in [docs/api-contract.md](docs/api-contra
 
 Docker-internal names such as `api` and `db` are used only for container-to-container communication. A browser uses the published `localhost` URLs above.
 
+## Backend API image
+
+Phase 7B adds a multi-stage backend image. Build it from the repository root so the pinned SDK configuration and central package management remain available:
+
+```bash
+docker build -f backend/Dockerfile -t school-admission-api:local .
+```
+
+The build uses the official Microsoft .NET 10 SDK image as its base and installs the repository-pinned SDK `10.0.114` from Microsoft's published archive with SHA-512 verification. The final image uses the official ASP.NET Core `10.0.14` runtime, contains only published API output, runs as the unprivileged `app` user, and listens on container port `8080`.
+
+The image does not apply EF Core migrations. Inject `ConnectionStrings__DefaultConnection`, `HOLD_DURATION_SECONDS`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS`, and `HOLD_EXPIRY_BATCH_SIZE` at runtime. The API's `/health` endpoint is process liveness; `/health/ready` verifies PostgreSQL connectivity. A reliable image-level HTTP health probe is deferred to the Compose integration phase because the minimal runtime image does not include `curl` or `wget`.
+
 ## Planned local startup
 
 The current persistence milestone can be started and verified with:
@@ -55,7 +67,7 @@ PostgreSQL will use a named volume mounted at `postgres_data:/var/lib/postgresql
 
 The implemented defaults are `HOLD_DURATION_SECONDS=600`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS=5`, and `HOLD_EXPIRY_BATCH_SIZE=100`. The expiry interval and batch size must be positive integers; invalid values fail API startup.
 
-The full command is not runnable yet because the API and frontend Dockerfiles and the final multi-service Compose wiring have not been created. The current Compose file contains the PostgreSQL 18 service only. The frontend can be run independently with the commands below.
+The full command is not runnable yet because the frontend Dockerfile, migration service, and final multi-service Compose wiring have not been created. The current Compose file contains the PostgreSQL 18 service only. The backend image can be built independently with the command above, and the frontend can be run independently with the commands below.
 
 ## Frontend development
 
@@ -80,6 +92,7 @@ docker compose config
 dotnet restore backend/SchoolAdmission.sln
 dotnet build backend/SchoolAdmission.sln
 dotnet test backend/SchoolAdmission.sln
+docker build -f backend/Dockerfile -t school-admission-api:local .
 npm ci --prefix frontend
 npm run build --prefix frontend
 npm run test --prefix frontend -- --run
@@ -131,13 +144,14 @@ AI_USAGE.md               AI-assisted development record
 | Hold creation/read API and request-time expiry reconciliation | Complete |
 | Confirmation, cancellation, and student history | Complete for milestone 5B |
 | Background expiry worker | Complete for the current backend milestone |
-| Frontend student and administrator workflows | Phase 6A/6B/6C complete; Phase 6D E2E complete; Docker/CI/deployment remain |
+| Frontend student and administrator workflows | Phase 6A/6B/6C complete; Phase 6D E2E complete; frontend image/CI/deployment remain |
 | PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
+| Backend API Docker image | Phase 7B complete; runtime smoke-verified; full Compose integration remains |
 | Docker Compose database service | Complete; full application stack not started |
 | Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 47 Vitest/RTL tests plus Playwright E2E coverage |
 | CI/CD workflows | Not started |
 
-Do not treat the current repository as a complete runnable application until the outstanding Docker image, full Compose, and CI work is complete and verified.
+Do not treat the current repository as a complete runnable application until the outstanding frontend image, migration service, full Compose, and CI work is complete and verified.
 
 ## Background expiry worker
 
