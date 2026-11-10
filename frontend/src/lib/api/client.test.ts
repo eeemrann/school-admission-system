@@ -73,4 +73,11 @@ describe("typed API client", () => {
       ApiConfigurationError,
     );
   });
+
+  it("accepts a same-origin API path for production reverse proxying", () => {
+    expect(getApiBaseUrl({ VITE_API_BASE_URL: "/api/" })).toBe("/api");
+    expect(() => getApiBaseUrl({ VITE_API_BASE_URL: "//api.internal" })).toThrow(
+      ApiConfigurationError,
+    );
+  });
 });

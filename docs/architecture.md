@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, read-only class details, and workflow tests. Phase 6D adds real-browser Playwright coverage against disposable PostgreSQL infrastructure and dialog accessibility regression coverage. Phase 7B adds the multi-stage backend API image. The frontend image, migration service, full Compose deployment, and CI remain future implementation stages.
+This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, database-only Compose service, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, read-only class details, and workflow tests. Phase 6D adds real-browser Playwright coverage against disposable PostgreSQL infrastructure and dialog accessibility regression coverage. Phase 7B adds the multi-stage backend API image and Phase 7C adds the multi-stage React/Nginx frontend image. The migration service, full Compose deployment, and CI remain future implementation stages.
 
 ## Runtime boundaries
 
@@ -62,7 +62,7 @@ The administrator portal has its own responsive sidebar layout under `components
 
 The frontend uses the official Tailwind CSS Vite plugin and requires `VITE_API_BASE_URL`. Missing or invalid API configuration is surfaced as an understandable UI error rather than silently targeting an unknown service. TanStack Query uses a 30-second default stale time, a five-minute cache lifetime, no focus refetch, and no repeated retries for business 4xx responses. Student mutations invalidate class availability, student history, and individual hold queries as appropriate.
 
-The browser calls the host API URL `http://localhost:8080`. It must never use Docker-internal service names such as `api` or `db`. The frontend does not connect directly to PostgreSQL.
+In development, the browser may call the host API URL `http://localhost:8080` or use the Vite `/api` proxy. In the production frontend image, the browser always calls same-origin `/api`; unprivileged Nginx strips that prefix and proxies `/api/` descendants to the Docker-internal `api:8080` service. The exact `/api` path returns 404 so it cannot fall through to the SPA, while `/api/` remains an API proxy path. The browser must never resolve Docker-internal service names such as `api` or `db`, and the frontend does not connect directly to PostgreSQL.
 
 ## Planned data model
 
@@ -155,7 +155,7 @@ The final Compose stack will define:
 - `api`: the ASP.NET Core image, configured with the database connection and `HOLD_DURATION_SECONDS`, published on host port 8080;
 - `frontend`: the React/Vite production-serving image, configured with the browser-facing API URL `http://localhost:8080` and published on host port 5173.
 
-The future Compose stack should wait for database readiness, run the one-shot `migrate` service, and start the API only after migration succeeds. The API image itself must not apply migrations during startup. Secrets must be supplied through environment configuration and must not be committed. The frontend image and full multi-service Compose stack remain future implementation work.
+The future Compose stack should wait for database readiness, run the one-shot `migrate` service, and start the API only after migration succeeds. The API image itself must not apply migrations during startup. Secrets must be supplied through environment configuration and must not be committed. The Phase 7C frontend image serves the Vite output with unprivileged Nginx on port `8080`, provides BrowserRouter fallback handling, and proxies same-origin `/api/` requests to `api:8080`; only its full multi-service Compose integration remains future work.
 
 The current Compose file contains only the `db` service for this persistence milestone. It uses PostgreSQL 18, a named `postgres_data` volume mounted at `/var/lib/postgresql`, and the standard host port 5432. If that host port is occupied locally, an untracked Compose override or an alternate local verification port may be used without changing the documented container port or committed defaults.
 

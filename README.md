@@ -1,6 +1,6 @@
 # School Admission System
 
-Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the Phase 6A/6B/6C React student and administrator workflows, the Phase 6D real-browser E2E harness, and the Phase 7B backend API image. The frontend image, full Compose application, CI workflows, and deployment are still pending.
+Development is in progress. This repository contains the foundation documentation, a PostgreSQL-backed ASP.NET Core API with transactional admission workflows and background expiry processing, the Phase 6A/6B/6C React student and administrator workflows, the Phase 6D real-browser E2E harness, the Phase 7B backend API image, and the Phase 7C frontend image. The migration service, full Compose application, CI workflows, and deployment are still pending.
 
 The planned system is a professional school admission workflow for administrators, students, and parents. Administrators will create classes and configure capacity. Students/parents will browse classes, temporarily hold a seat, simulate fee confirmation, track applications, and cancel an unconfirmed application. PostgreSQL transactions and constraints will protect capacity during concurrent admission requests.
 
@@ -42,6 +42,16 @@ docker build -f backend/Dockerfile -t school-admission-api:local .
 The build uses the official Microsoft .NET 10 SDK image as its base and installs the repository-pinned SDK `10.0.114` from Microsoft's published archive with SHA-512 verification. The final image uses the official ASP.NET Core `10.0.14` runtime, contains only published API output, runs as the unprivileged `app` user, and listens on container port `8080`.
 
 The image does not apply EF Core migrations. Inject `ConnectionStrings__DefaultConnection`, `HOLD_DURATION_SECONDS`, `HOLD_EXPIRY_POLL_INTERVAL_SECONDS`, and `HOLD_EXPIRY_BATCH_SIZE` at runtime. The API's `/health` endpoint is process liveness; `/health/ready` verifies PostgreSQL connectivity. A reliable image-level HTTP health probe is deferred to the Compose integration phase because the minimal runtime image does not include `curl` or `wget`.
+
+## Frontend image
+
+Phase 7C adds a production frontend image. Build it from the repository root:
+
+```bash
+docker build -f frontend/Dockerfile -t school-admission-frontend:local .
+```
+
+The multi-stage build uses Node.js 22 and `npm ci` to produce the Vite `dist/` output, then serves only those static files with `nginxinc/nginx-unprivileged:stable-alpine` on container port `8080`. The image runs as the unprivileged `nginx` user, supports BrowserRouter refreshes through an `index.html` fallback, and sends same-origin `/api/*` requests through Nginx to the Docker-internal `api:8080` service after stripping the `/api` prefix. The exact `/api` path is intentionally a 404 rather than an SPA fallback; `/api/` and its descendants remain proxy paths. `VITE_API_BASE_URL` is a build-time Vite value; the image default is `/api`, while local development may continue using the documented host API URL or the Vite proxy.
 
 ## Planned local startup
 
@@ -96,9 +106,10 @@ docker build -f backend/Dockerfile -t school-admission-api:local .
 npm ci --prefix frontend
 npm run build --prefix frontend
 npm run test --prefix frontend -- --run
+docker build -f frontend/Dockerfile -t school-admission-frontend:local .
 ```
 
-The current backend test project includes 90 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, and concurrency tests. The frontend has 47 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
+The current backend test project includes 90 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, and concurrency tests. The frontend has 50 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
 
 ## End-to-end testing
 
@@ -144,14 +155,15 @@ AI_USAGE.md               AI-assisted development record
 | Hold creation/read API and request-time expiry reconciliation | Complete |
 | Confirmation, cancellation, and student history | Complete for milestone 5B |
 | Background expiry worker | Complete for the current backend milestone |
-| Frontend student and administrator workflows | Phase 6A/6B/6C complete; Phase 6D E2E complete; frontend image/CI/deployment remain |
+| Frontend student and administrator workflows | Phase 6A/6B/6C complete; Phase 6D E2E complete; frontend image complete; CI/deployment remain |
 | PostgreSQL persistence/schema/migration | Complete for the foundation milestone |
 | Backend API Docker image | Phase 7B complete; runtime smoke-verified; full Compose integration remains |
+| Frontend Docker image | Phase 7C complete; runtime smoke verification performed; full Compose integration remains |
 | Docker Compose database service | Complete; full application stack not started |
-| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 47 Vitest/RTL tests plus Playwright E2E coverage |
+| Automated tests | 90 default PostgreSQL-backed tests pass; the opt-in 1,000-request stress test also passes; frontend has 50 Vitest/RTL tests plus Playwright E2E coverage |
 | CI/CD workflows | Not started |
 
-Do not treat the current repository as a complete runnable application until the outstanding frontend image, migration service, full Compose, and CI work is complete and verified.
+Do not treat the current repository as a complete runnable application until the outstanding migration service, full Compose, and CI work is complete and verified.
 
 ## Background expiry worker
 

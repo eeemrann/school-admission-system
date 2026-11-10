@@ -19,13 +19,19 @@ export function getApiBaseUrl(environment: FrontendEnvironment = import.meta.env
     );
   }
 
+  if (configuredUrl.startsWith("/") && !configuredUrl.startsWith("//")) {
+    return configuredUrl.replace(/\/+$/, "") || "/";
+  }
+
   try {
     const parsedUrl = new URL(configuredUrl);
     if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
       throw new Error("Unsupported protocol");
     }
   } catch {
-    throw new ApiConfigurationError("VITE_API_BASE_URL must be a valid HTTP or HTTPS URL.");
+    throw new ApiConfigurationError(
+      "VITE_API_BASE_URL must be a valid HTTP(S) URL or same-origin path.",
+    );
   }
 
   return configuredUrl.replace(/\/+$/, "");
