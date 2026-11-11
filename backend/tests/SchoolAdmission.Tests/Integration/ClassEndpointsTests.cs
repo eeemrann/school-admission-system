@@ -116,6 +116,84 @@ public sealed class ClassEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdatesClassNameWithoutChangingCapacity()
+    {
+        using var client = CreateClient();
+        var created = await CreateClassAsync(client, "Acceptance workflow 1794352631510", 35);
+
+        using var response = await client.PatchAsJsonAsync(
+            $"/classes/{created.Id}",
+            new UpdateClassRequest("  Class 6 — Morning Shift  "));
+        var updated = await response.Content.ReadFromJsonAsync<ClassSummaryResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Class 6 — Morning Shift", updated?.Name);
+        Assert.Equal(created.Id, updated?.Id);
+        Assert.Equal(35, updated?.TotalSeats);
+        Assert.Equal(35, updated?.AvailableSeats);
+    }
+
+    [Fact]
+    public async Task IncreasesClassCapacityWithoutChangingSeatCounters()
+    {
+        using var client = CreateClient();
+        var created = await CreateClassAsync(client, "Capacity expansion class", 20);
+
+        using var response = await client.PatchAsJsonAsync(
+            $"/classes/{created.Id}",
+            new UpdateClassRequest(null, 30));
+        var updated = await response.Content.ReadFromJsonAsync<ClassSummaryResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(created.Id, updated?.Id);
+        Assert.Equal(30, updated?.TotalSeats);
+        Assert.Equal(30, updated?.AvailableSeats);
+        Assert.Equal(0, updated?.HeldSeats);
+        Assert.Equal(0, updated?.ConfirmedSeats);
+    }
+
+    [Fact]
+    public async Task RejectsClassCapacityDecrease()
+    {
+        using var client = CreateClient();
+        var created = await CreateClassAsync(client, "Protected capacity class", 30);
+
+        using var response = await client.PatchAsJsonAsync(
+            $"/classes/{created.Id}",
+            new UpdateClassRequest(null, 20));
+
+        await AssertProblemAsync(response, HttpStatusCode.Conflict, "CAPACITY_CANNOT_DECREASE");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task RejectsEmptyClassNameUpdates(string? name)
+    {
+        using var client = CreateClient();
+        var created = await CreateClassAsync(client, "Readable Class", 20);
+
+        using var response = await client.PatchAsJsonAsync(
+            $"/classes/{created.Id}",
+            new UpdateClassRequest(name));
+
+        await AssertProblemAsync(response, HttpStatusCode.BadRequest, "VALIDATION_ERROR");
+    }
+
+    [Fact]
+    public async Task ReturnsNotFoundWhenUpdatingUnknownClass()
+    {
+        using var client = CreateClient();
+
+        using var response = await client.PatchAsJsonAsync(
+            $"/classes/c_{Guid.NewGuid():N}",
+            new UpdateClassRequest("Readable Class"));
+
+        await AssertProblemAsync(response, HttpStatusCode.NotFound, "CLASS_NOT_FOUND");
+    }
+
+    [Fact]
     public async Task ReturnsNotFoundForUnknownClass()
     {
         using var client = CreateClient();
@@ -237,6 +315,8 @@ public sealed class ClassEndpointsTests : IDisposable
     }
 
     private sealed record CreateClassRequest(string? Name, int TotalSeats);
+
+    private sealed record UpdateClassRequest(string? Name, int? TotalSeats = null);
 
     private sealed record CreatedClassResponse(string Id, string Name, int TotalSeats);
 

@@ -27,4 +27,32 @@ public sealed class EfAdmissionClassRepository(SchoolAdmissionDbContext dbContex
             .AsNoTracking()
             .SingleOrDefaultAsync(admissionClass => admissionClass.Id == id, cancellationToken);
     }
+
+    public async Task<AdmissionClass?> UpdateAsync(
+        Guid id,
+        string? name,
+        int? totalSeats,
+        CancellationToken cancellationToken)
+    {
+        var admissionClass = await dbContext.AdmissionClasses
+            .SingleOrDefaultAsync(admissionClass => admissionClass.Id == id, cancellationToken);
+
+        if (admissionClass is null)
+        {
+            return null;
+        }
+
+        if (name is not null)
+        {
+            admissionClass.Name = name;
+        }
+
+        if (totalSeats.HasValue)
+        {
+            admissionClass.TotalSeats = totalSeats.Value;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return admissionClass;
+    }
 }

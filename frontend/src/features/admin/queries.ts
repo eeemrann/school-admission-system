@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiClient } from "../../lib/api/client";
-import type { CreateClassRequest } from "../../types/api";
+import type { CreateClassRequest, UpdateClassRequest } from "../../types/api";
 import { classesQueryKey, classQueryKey } from "../classes/queries";
 
 // Keep one cache for the public class catalogue and administrator views. The API
@@ -38,3 +38,19 @@ export function useCreateClassMutation() {
     },
   });
 }
+
+export function useUpdateClassMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ classId, request }: { classId: string; request: UpdateClassRequest }) =>
+      getApiClient().updateClassName(classId, request),
+    onSuccess: async (updatedClass) => {
+      queryClient.setQueryData(adminClassQueryKey(updatedClass.id), updatedClass);
+      await queryClient.invalidateQueries({ queryKey: adminClassesQueryKey });
+    },
+  });
+}
+
+// Compatibility alias for callers that only change the human-facing name.
+export const useUpdateClassNameMutation = useUpdateClassMutation;

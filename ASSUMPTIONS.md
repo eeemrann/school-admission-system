@@ -6,6 +6,7 @@ This document makes decisions explicit where the supplied requirements do not fu
 
 - No login or authentication system is required.
 - `X-Student-Id` is required for hold creation, confirmation, cancellation, and the student's application list. It is treated as a trimmed, exactly 17-digit numeric birth registration number.
+- The student portal collects a human-facing student name alongside that number and stores the name in browser local storage for the profile display; the name is not part of the API identity contract or an authentication credential.
 - The header is an assignment-level identity selector, not a security proof. The API must still enforce that a student can mutate only their own hold.
 - Class creation is available to the administrator UI without a separate admin login because no admin authentication contract was supplied.
 
@@ -13,7 +14,8 @@ This document makes decisions explicit where the supplied requirements do not fu
 
 - `totalSeats` must be a positive integer.
 - A class name must be non-empty after trimming.
-- The supplied contract contains class creation but no class update or deletion operation. Class capacity is therefore treated as immutable through the public API for this assignment.
+- A class name may be updated by an administrator after creation through `PATCH /classes/{classId}`. The update preserves the opaque class ID, seat counters, and application history.
+- Class deletion is not part of the public API. Class capacity may be increased through the public API, but never decreased because doing so could invalidate existing reservations.
 - Class IDs and hold IDs are opaque API strings. The planned implementation will use readable prefixes such as `c_` and `h_`, but clients must not depend on the ID generation format.
 
 ## Hold duration and expiry

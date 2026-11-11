@@ -319,8 +319,8 @@ function CreatedHoldNotice({ hold }: { hold: CreatedHold }) {
               <Badge tone="success">Application created</Badge>
             </div>
             <p className="mt-1 text-sm leading-6 text-emerald-900">
-              Hold <code className="rounded bg-white/70 px-1.5 py-0.5 text-xs">{hold.holdId}</code>{" "}
-              was created. Complete confirmation before the server-provided expiry time.
+              Your application is active. Complete confirmation before the server-provided expiry
+              time.
             </p>
             <Link
               className="mt-3 inline-flex text-sm font-bold text-emerald-800 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-950"

@@ -14,7 +14,7 @@ export function AdminClassTable({ classes }: { classes: readonly ClassSummary[] 
         <div>
           <h3 className="font-bold text-slate-950">Class capacity register</h3>
           <p className="mt-1 text-sm text-slate-600">
-            Review live capacity counters and open a read-only detail view.
+            Review live capacity counters and open a detail view to update the name or capacity.
           </p>
         </div>
         <span className="text-xs font-semibold text-slate-500">{classes.length} offerings</span>

@@ -7,6 +7,7 @@ import type {
   HoldConfirmation,
   HoldDetails,
   ProblemDetails,
+  UpdateClassRequest,
 } from "../../types/api";
 import { getApiBaseUrl } from "../config/env";
 
@@ -15,7 +16,7 @@ export interface ApiClientOptions {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "DELETE";
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   studentId?: string;
   signal?: AbortSignal;
@@ -55,6 +56,18 @@ export class ApiClient {
   public createClass(request: CreateClassRequest, signal?: AbortSignal): Promise<CreatedClass> {
     return this.request<CreatedClass>("/classes", {
       method: "POST",
+      body: request,
+      signal,
+    });
+  }
+
+  public updateClassName(
+    classId: string,
+    request: UpdateClassRequest,
+    signal?: AbortSignal,
+  ): Promise<ClassSummary> {
+    return this.request<ClassSummary>(`/classes/${encodeURIComponent(classId)}`, {
+      method: "PATCH",
       body: request,
       signal,
     });

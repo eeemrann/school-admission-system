@@ -3,20 +3,23 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useStudentIdentity } from "../../../hooks/useStudentIdentity";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
+import { InlineNotice } from "../../../components/ui/InlineNotice";
 import { Input } from "../../../components/ui/Input";
 
 export function StudentIdentitySelector() {
-  const { studentId, setStudentId, clearStudentId } = useStudentIdentity();
+  const { studentId, studentName, setStudentIdentity, clearStudentId } = useStudentIdentity();
   const [draft, setDraft] = useState(studentId ?? "");
+  const [nameDraft, setNameDraft] = useState(studentName ?? "");
   const [error, setError] = useState<string>();
 
   useEffect(() => {
     setDraft(studentId ?? "");
-  }, [studentId]);
+    setNameDraft(studentName ?? "");
+  }, [studentId, studentName]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = setStudentId(draft);
+    const result = setStudentIdentity(draft, nameDraft);
     setError(result.error);
   }
 
@@ -30,7 +33,7 @@ export function StudentIdentitySelector() {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-extrabold tracking-tight text-slate-950">
-              Choose your student identity
+              {studentName ? "Your student profile" : "Create your student profile"}
             </h2>
             {studentId ? (
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
@@ -40,19 +43,25 @@ export function StudentIdentitySelector() {
             ) : null}
           </div>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-            Use your 17-digit birth registration number to view and manage your applications.
+            Add your name and 17-digit birth registration number to view and manage applications.
           </p>
         </div>
       </div>
-      <form
-        className="relative flex flex-col gap-4 md:flex-row md:items-end"
-        onSubmit={handleSubmit}
-      >
-        <div className="min-w-0 flex-1">
+      <form className="relative space-y-4" onSubmit={handleSubmit}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input
+            autoComplete="name"
+            label="Student name"
+            onChange={(event) => {
+              setNameDraft(event.target.value);
+              if (error) setError(undefined);
+            }}
+            placeholder="Enter the student's full name"
+            value={nameDraft}
+          />
           <Input
             autoComplete="off"
-            error={error}
-            hint="This selects the student record for this assignment. It is not a secure login or proof of identity."
+            hint="Enter the 17-digit number printed on the birth certificate. It is an assignment identity selector, not a secure login."
             inputMode="numeric"
             label="Birth Registration Number"
             maxLength={17}
@@ -64,7 +73,8 @@ export function StudentIdentitySelector() {
             value={draft}
           />
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
+        {error ? <InlineNotice tone="error">{error}</InlineNotice> : null}
+        <div className="flex flex-col justify-end gap-2 sm:flex-row">
           <Button className="w-full sm:w-auto" type="submit">
             {studentId ? "Change number" : "Use this number"}
           </Button>

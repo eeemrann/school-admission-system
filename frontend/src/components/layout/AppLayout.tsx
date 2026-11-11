@@ -2,6 +2,7 @@ import {
   ArrowUpRight,
   BookOpen,
   ClipboardList,
+  CircleUserRound,
   GraduationCap,
   Home,
   Shield,
@@ -18,7 +19,7 @@ const navigation = [
 ];
 
 export function AppLayout() {
-  const { studentId } = useStudentIdentity();
+  const { studentId, studentName } = useStudentIdentity();
   const maskedStudentId = studentId ? maskStudentId(studentId) : "Not selected";
 
   return (
@@ -48,19 +49,32 @@ export function AppLayout() {
             ))}
           </nav>
           <div className="order-2 flex items-center gap-2 sm:order-3">
-            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 lg:inline">
-              Active student
-            </span>
-            <span
+            <div
               aria-label={
                 studentId
-                  ? `Registration number ending in ${studentId.slice(-4)}`
-                  : "No student identity selected"
+                  ? `${studentName ?? "Student profile"}, registration number ending in ${studentId.slice(-4)}`
+                  : "No student profile selected"
               }
-              className={`max-w-36 truncate rounded-full border px-3 py-1.5 text-xs font-bold ${studentId ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-500"}`}
+              className={`flex max-w-52 items-center gap-2 rounded-2xl border px-2.5 py-1.5 ${studentId ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
             >
-              {maskedStudentId}
-            </span>
+              <span
+                className={`grid size-7 shrink-0 place-items-center rounded-xl ${studentId ? "bg-white text-emerald-700" : "bg-white text-slate-400"}`}
+              >
+                <CircleUserRound aria-hidden="true" className="size-4" />
+              </span>
+              <span className="min-w-0">
+                <span
+                  className={`block truncate text-xs font-extrabold ${studentId ? "text-emerald-900" : "text-slate-600"}`}
+                >
+                  {studentName ?? "Student profile"}
+                </span>
+                <span
+                  className={`block truncate text-[10px] font-semibold ${studentId ? "text-emerald-700" : "text-slate-500"}`}
+                >
+                  {studentId ? maskedStudentId : "Name + birth registration needed"}
+                </span>
+              </span>
+            </div>
             {studentId ? (
               <NavLink
                 aria-label="Change student identity"

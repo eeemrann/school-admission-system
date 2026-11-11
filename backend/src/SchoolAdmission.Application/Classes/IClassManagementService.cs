@@ -11,4 +11,9 @@ public interface IClassManagementService
     Task<ClassOperationResult<ClassSummaryResponse>> GetByIdAsync(
         string? publicClassId,
         CancellationToken cancellationToken);
+
+    Task<ClassOperationResult<ClassSummaryResponse>> UpdateAsync(
+        string? publicClassId,
+        UpdateClassRequest? request,
+        CancellationToken cancellationToken);
 }

@@ -3,7 +3,6 @@ import { useCallback, useState } from "react";
 import { Badge, StatusBadge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
-import { CompactId } from "../../../components/ui/CompactId";
 import { ConfirmationDialog } from "../../../components/ui/Dialog";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
@@ -232,9 +231,7 @@ function ApplicationRow({
         ) : null}
       </div>
 
-      <dl className="mt-5 grid gap-3 border-t border-brand-border pt-4 sm:grid-cols-3">
-        <ApplicationDetail label="Application ID" value={application.holdId} />
-        <ApplicationDetail label="Class ID" value={application.classId} />
+      <dl className="mt-5 border-t border-brand-border pt-4">
         <ApplicationDetail
           label={status === "HELD" ? "Expires" : "Reservation window"}
           value={formatDate(application.expiresAt)}
@@ -304,13 +301,7 @@ function ApplicationDetail({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
       <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className="mt-1 text-sm font-semibold text-slate-800">
-        {label === "Application ID" || label === "Class ID" ? (
-          <CompactId label={label.toLowerCase()} value={value} />
-        ) : (
-          value
-        )}
-      </dd>
+      <dd className="mt-1 text-sm font-semibold text-slate-800">{value}</dd>
     </div>
   );
 }

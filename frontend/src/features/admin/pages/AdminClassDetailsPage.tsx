@@ -1,5 +1,6 @@
-import { ArrowLeft, BookOpen, CheckCircle2, Clock3, RefreshCw, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, Clock3, Pencil, RefreshCw, Users } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
@@ -11,21 +12,31 @@ import { LoadingIndicator } from "../../../components/ui/LoadingIndicator";
 import { PageHeader } from "../../../components/ui/PageHeader";
 import type { ClassSummary } from "../../../types/api";
 import { CapacityBar } from "../components/CapacityBar";
+import { EditClassNameDialog } from "../components/EditClassNameDialog";
 import { getClassUtilizationPercent } from "../metrics";
 import { useAdminClassQuery } from "../queries";
 
 export function AdminClassDetailsPage() {
   const { classId } = useParams();
   const classQuery = useAdminClassQuery(classId ?? "", Boolean(classId));
+  const [editNameOpen, setEditNameOpen] = useState(false);
 
   return (
     <div className="space-y-8">
       <PageHeader
-        description="Review authoritative seat counters for this offering. Editing and deletion are not part of the current API contract."
+        description="Review authoritative seat counters and keep the human-facing offering name clear for students and families."
         eyebrow="Class details"
         title={classQuery.data?.name ?? "Class details"}
         actions={
           <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              disabled={!classQuery.data}
+              variant="primary"
+              onClick={() => setEditNameOpen(true)}
+            >
+              <Pencil aria-hidden="true" className="size-4" />
+              Edit name
+            </Button>
             <Button
               disabled={classQuery.isFetching}
               isLoading={classQuery.isFetching}
@@ -61,6 +72,16 @@ export function AdminClassDetailsPage() {
         />
       ) : classQuery.isSuccess ? (
         <ClassDetails admissionClass={classQuery.data} />
+      ) : null}
+      {classQuery.data && classId ? (
+        <EditClassNameDialog
+          classId={classId}
+          currentName={classQuery.data.name}
+          currentTotalSeats={classQuery.data.totalSeats}
+          onClose={() => setEditNameOpen(false)}
+          onSaved={() => void classQuery.refetch()}
+          open={editNameOpen}
+        />
       ) : null}
     </div>
   );

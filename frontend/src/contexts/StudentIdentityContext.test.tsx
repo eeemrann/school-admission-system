@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { StudentIdentityProvider } from "./StudentIdentityContext";
 import { useStudentIdentity } from "../hooks/useStudentIdentity";
-import { validateStudentId } from "./studentIdentity";
+import { validateStudentId, validateStudentName } from "./studentIdentity";
 import { createQueryClient } from "../app/queryClient";
 
 function renderIdentityProbe() {
@@ -16,11 +16,14 @@ function renderIdentityProbe() {
 }
 
 function IdentityProbe() {
-  const { studentId, setStudentId } = useStudentIdentity();
+  const { studentId, studentName, setStudentIdentity } = useStudentIdentity();
   return (
     <div>
       <output>{studentId ?? "none"}</output>
-      <button onClick={() => setStudentId("  20152691234560048  ")}>Set ID</button>
+      <output>{studentName ?? "no name"}</output>
+      <button onClick={() => setStudentIdentity("  20152691234560048  ", "  Samira  Rahman ")}>
+        Set identity
+      </button>
     </div>
   );
 }
@@ -34,17 +37,24 @@ describe("student identity", () => {
     expect(validateStudentId("   ").ok).toBe(false);
     expect(validateStudentId("2015269123456004").ok).toBe(false);
     expect(validateStudentId("2015269123456004A").ok).toBe(false);
+    expect(validateStudentName("  Samira   Rahman ")).toEqual({
+      ok: true,
+      value: "Samira Rahman",
+    });
+    expect(validateStudentName(" ").ok).toBe(false);
   });
 
   it("persists a selected identifier for the next browser render", () => {
     const firstRender = renderIdentityProbe();
 
-    fireEvent.click(screen.getByRole("button", { name: "Set ID" }));
+    fireEvent.click(screen.getByRole("button", { name: "Set identity" }));
     expect(screen.getByText("20152691234560048")).toBeInTheDocument();
+    expect(screen.getByText("Samira Rahman")).toBeInTheDocument();
     firstRender.unmount();
 
     renderIdentityProbe();
 
     expect(screen.getByText("20152691234560048")).toBeInTheDocument();
+    expect(screen.getByText("Samira Rahman")).toBeInTheDocument();
   });
 });

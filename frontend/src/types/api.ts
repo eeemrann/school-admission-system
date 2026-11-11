@@ -20,6 +20,11 @@ export interface CreateClassRequest {
   totalSeats: number;
 }
 
+export interface UpdateClassRequest {
+  name?: string;
+  totalSeats?: number;
+}
+
 export interface CreatedHold {
   holdId: string;
   classId: string;

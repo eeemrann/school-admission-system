@@ -9,4 +9,10 @@ public interface IAdmissionClassRepository
     Task<IReadOnlyList<AdmissionClass>> ListAsync(CancellationToken cancellationToken);
 
     Task<AdmissionClass?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<AdmissionClass?> UpdateAsync(
+        Guid id,
+        string? name,
+        int? totalSeats,
+        CancellationToken cancellationToken);
 }

@@ -54,6 +54,26 @@ public sealed class ClassesController(IClassManagementService classManagementSer
         return Ok(result.Value);
     }
 
+    [HttpPatch("{classId}")]
+    [ProducesResponseType(typeof(ClassSummaryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ClassSummaryResponse>> Update(
+        string classId,
+        [FromBody] UpdateClassRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var result = await classManagementService.UpdateAsync(classId, request, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return ToProblem(result.Error!);
+        }
+
+        return Ok(result.Value);
+    }
+
     private ObjectResult ToProblem(ClassManagementError error) => error.Code switch
     {
         ClassManagementErrorCode.ValidationError => ApiProblemDetails.Create(
@@ -70,6 +90,14 @@ public sealed class ClassesController(IClassManagementService classManagementSer
             "CLASS_NOT_FOUND",
             "Class not found",
             "class-not-found",
+            error.Detail,
+            error.Errors),
+        ClassManagementErrorCode.CapacityCannotDecrease => ApiProblemDetails.Create(
+            HttpContext,
+            StatusCodes.Status409Conflict,
+            "CAPACITY_CANNOT_DECREASE",
+            "Capacity cannot be decreased",
+            "capacity-cannot-decrease",
             error.Detail,
             error.Errors),
         _ => ApiProblemDetails.Create(

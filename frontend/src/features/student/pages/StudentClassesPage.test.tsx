@@ -60,7 +60,7 @@ describe("StudentClassesPage admission creation", () => {
     fireEvent.click(applyButton);
 
     expect(await screen.findByText("Seat temporarily reserved")).toBeInTheDocument();
-    expect(screen.getByText(createdHold.holdId)).toBeInTheDocument();
+    expect(screen.queryByText(createdHold.holdId)).not.toBeInTheDocument();
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
     expect(screen.getByText("4")).toBeInTheDocument();
 
@@ -236,7 +236,7 @@ describe("StudentClassesPage admission creation", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Student A's first request failed.");
     fireEvent.click(screen.getByRole("button", { name: /apply for admission/i }));
     expect(await screen.findByText("Seat temporarily reserved")).toBeInTheDocument();
-    expect(screen.getByText(holdForTest.holdId)).toBeInTheDocument();
+    expect(screen.queryByText(holdForTest.holdId)).not.toBeInTheDocument();
     expect(
       screen.getByTitle("The server remains authoritative for reservation expiry"),
     ).toHaveTextContent(/^\d{2}:\d{2}$/);

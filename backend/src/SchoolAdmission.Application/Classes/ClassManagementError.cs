@@ -3,7 +3,8 @@ namespace SchoolAdmission.Application.Classes;
 public enum ClassManagementErrorCode
 {
     ValidationError,
-    ClassNotFound
+    ClassNotFound,
+    CapacityCannotDecrease
 }
 
 public sealed record ClassManagementError(

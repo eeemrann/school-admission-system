@@ -5,14 +5,16 @@ import { StudentIdentityProvider } from "../contexts/StudentIdentityContext";
 
 interface RenderWithProvidersOptions extends Omit<RenderOptions, "wrapper"> {
   studentId?: string;
+  studentName?: string;
 }
 
 export function renderWithProviders(
   element: ReactElement,
-  { studentId, ...options }: RenderWithProvidersOptions = {},
+  { studentId, studentName = "Test Student", ...options }: RenderWithProvidersOptions = {},
 ) {
   if (studentId) {
     window.localStorage.setItem("school-admission.student-id", studentId);
+    window.localStorage.setItem("school-admission.student-name", studentName);
   }
 
   const queryClient = new QueryClient({

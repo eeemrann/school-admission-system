@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, complete local Compose deployment, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, read-only class details, and workflow tests. Phase 6D adds real-browser Playwright coverage against disposable PostgreSQL infrastructure and dialog accessibility regression coverage. Phase 7B adds the multi-stage backend API image, Phase 7C adds the multi-stage React/Nginx frontend image, and Phase 7D adds the dedicated one-shot EF Core migrator image. CI remains future work.
+This is the architecture for the school admission system. The initial backend solution, health/Swagger skeleton, PostgreSQL persistence foundation, initial migration, database readiness endpoint, complete local Compose deployment, class-management API, reservation endpoints, confirmation, cancellation, student history, background expiry worker, and their PostgreSQL-backed integration/concurrency tests now exist. The Phase 6A/6B/6C frontend now includes routing, shared UI primitives, typed REST access, student identity persistence/isolation, QueryClient configuration, class browsing, hold creation, server-authoritative countdowns, confirmation/cancellation actions, history recovery, administrator dashboard metrics, class management/creation, human-readable class-name editing, capacity details, and workflow tests. Phase 6D adds real-browser Playwright coverage against disposable PostgreSQL infrastructure and dialog accessibility regression coverage. Phase 7B adds the multi-stage backend API image, Phase 7C adds the multi-stage React/Nginx frontend image, and Phase 7D adds the dedicated one-shot EF Core migrator image. CI remains future work.
 
 ## Runtime boundaries
 
@@ -58,7 +58,7 @@ The current implementation lives under `frontend/src/`:
 - `lib/api/` owns the centralized typed fetch client and RFC 7807 Problem Details errors;
 - `lib/config/`, `contexts/`, `hooks/`, `types/`, and `styles/` hold configuration, browser identity state, shared API models, and Tailwind styles.
 
-The administrator portal has its own responsive sidebar layout under `components/layout/AdminLayout.tsx`. Its dashboard and class-management views use the existing `GET /classes`, `GET /classes/{classId}`, and `POST /classes` contract. Aggregate counts and utilization percentages are pure frontend derivations of returned `ClassSummary` values; the UI does not fabricate application, student, revenue, or payment reporting. Administrator class creation invalidates the shared `classes` cache used by the student catalogue and administrator views. The portal is intentionally unauthenticated because the assignment provides no administrator authentication API.
+The administrator portal has its own responsive sidebar layout under `components/layout/AdminLayout.tsx`. Its dashboard and class-management views use `GET /classes`, `GET /classes/{classId}`, `POST /classes`, and `PATCH /classes/{classId}`. The update operation changes the human-facing class name and may increase capacity; class IDs, seat counters, and application history remain unchanged, while capacity reductions are rejected. Aggregate counts and utilization percentages are pure frontend derivations of returned `ClassSummary` values; the UI does not fabricate application, student, revenue, or payment reporting. Administrator class creation and updates invalidate the shared `classes` cache used by the student catalogue and administrator views. The portal is intentionally unauthenticated because the assignment provides no administrator authentication API.
 
 The frontend uses the official Tailwind CSS Vite plugin and requires `VITE_API_BASE_URL`. Missing or invalid API configuration is surfaced as an understandable UI error rather than silently targeting an unknown service. TanStack Query uses a 30-second default stale time, a five-minute cache lifetime, no focus refetch, and no repeated retries for business 4xx responses. Student mutations invalidate class availability, student history, and individual hold queries as appropriate.
 
@@ -68,7 +68,7 @@ In development, the browser may call the host API URL `http://localhost:8080` or
 
 The current relational model contains:
 
-- `admission_classes`: immutable public identity/name/capacity plus authoritative `held_seats` and `confirmed_seats` counters.
+- `admission_classes`: immutable public identity, human-facing name, adjustable-upward capacity, and authoritative `held_seats` and `confirmed_seats` counters.
 - `admission_holds`: public hold identity, class foreign key, student ID, uppercase status, UTC `expires_at`, and audit timestamps.
 
 PostgreSQL defenses will include foreign keys, non-negative counter checks, and a check equivalent to:
@@ -111,11 +111,11 @@ The implemented hold creation, hold-read, confirmation, cancellation, and studen
 3. The API validates the request and applies a transaction under the class lock.
 4. PostgreSQL commits the hold/status/counter change or rolls it back as one unit. Hold creation locks the class row first, reconciles due holds, checks active duplicates and capacity, then persists the new hold and counter increment in the same transaction.
 5. The frontend displays returned class/history state and derives a once-per-second countdown from the server-provided `expiresAt`. When the countdown reaches zero, it refetches the individual hold; it never changes authoritative status locally or confirms based only on the timer.
-6. The browser persists the student ID locally for convenience only; the API/database remains the source of truth and the UI can restore applications after reopening.
+6. The browser persists the student name and student ID locally for convenience only; the API/database remains the source of truth and the UI can restore applications after reopening. The name is presentation metadata and is intentionally not sent as a replacement for the API's `X-Student-Id` header.
 
 ### Administrator flow
 
-1. The admin UI submits a class name and positive capacity.
+1. The admin UI submits a class name and positive capacity; later edits may increase capacity but never reduce it.
 2. The API validates and persists the class.
 3. TanStack Query invalidates the shared class list and detail caches after a successful creation.
 4. The dashboard and class list read authoritative counters and derive utilization for presentation; `availableSeats` remains the API-provided value.

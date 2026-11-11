@@ -2,7 +2,7 @@
 
 ## Status
 
-This contract is fixed for the assignment. The backend must implement these eight operations without changing their paths, request headers, or success response field names. Class-management operations, hold creation/read, confirmation, cancellation, and student history are implemented in the current milestone. Examples use UTC timestamps in RFC 3339 form.
+This contract contains the nine implemented operations for the assignment. The original eight operations remain unchanged; the ninth administrator update operation keeps human-facing class names maintainable and permits safe capacity increases without changing class IDs or application history. Examples use UTC timestamps in RFC 3339 form.
 
 Base URL:
 
@@ -115,7 +115,35 @@ Returns the same object shape as one item in `GET /classes`:
 - `400 Bad Request`: `classId` is malformed or does not use the required `c_` UUID format.
 - `404 Not Found`: no class exists for `classId`.
 
-## 4. Hold a seat
+## 4. Update a class name or increase capacity
+
+This administrator operation updates the human-facing class name and/or increases capacity. Capacity cannot be decreased because doing so could invalidate existing reservations. At least one field is required. The response contains the full current class summary so clients can refresh without a second request.
+
+### Request
+
+```http
+PATCH /classes/{classId}
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "Class 6 — Morning Shift",
+  "totalSeats": 30
+}
+```
+
+### Success: `200 OK`
+
+Returns the same object shape as one item in `GET /classes`.
+
+### Expected errors
+
+- `400 Bad Request`: `classId` is malformed, the request body is missing, no update field is provided, `name` is blank, or `totalSeats` is non-positive.
+- `409 Conflict`: `totalSeats` is lower than the class's current capacity.
+- `404 Not Found`: no class exists for `classId`.
+
+## 5. Hold a seat
 
 ### Request
 
@@ -146,7 +174,7 @@ The default hold duration is 600 seconds and is configurable with `HOLD_DURATION
 - `404 Not Found`: no class exists for `classId`.
 - `409 Conflict`: no seats are available or the student already has an active application for this class.
 
-## 5. Get a hold
+## 6. Get a hold
 
 ### Request
 
@@ -174,7 +202,7 @@ The possible `status` values are `HELD`, `CONFIRMED`, `EXPIRED`, and `CANCELLED`
 - `400 Bad Request`: `holdId` is malformed.
 - `404 Not Found`: no hold exists for `holdId`.
 
-## 6. Confirm admission
+## 7. Confirm admission
 
 ### Request
 
@@ -203,7 +231,7 @@ The operation is idempotent for the owning student and an already `CONFIRMED` ho
 - `404 Not Found`: no hold exists for `holdId`.
 - `409 Conflict`: the hold is expired, cancelled, or otherwise cannot be confirmed.
 
-## 7. Cancel a hold
+## 8. Cancel a hold
 
 ### Request
 
@@ -223,7 +251,7 @@ The application remains in history with status `CANCELLED`. Repeating cancellati
 - `404 Not Found`: no hold exists for `holdId`.
 - `409 Conflict`: the hold is `EXPIRED` or `CONFIRMED` and cannot be cancelled through this contract.
 
-## 8. List the current student's applications
+## 9. List the current student's applications
 
 ### Request
 
@@ -270,6 +298,7 @@ The success responses, paths, headers, field names, and success status codes abo
 | `VALIDATION_ERROR`             | 400    | Request body, path value, or header is invalid.                                            |
 | `STUDENT_ID_REQUIRED`          | 400    | A required `X-Student-Id` header is missing or does not contain exactly 17 numeric digits. |
 | `CLASS_NOT_FOUND`              | 404    | The requested class does not exist.                                                        |
+| `CAPACITY_CANNOT_DECREASE`     | 409    | The requested class capacity is lower than its current capacity.                           |
 | `HOLD_NOT_FOUND`               | 404    | The requested hold does not exist.                                                         |
 | `HOLD_OWNER_FORBIDDEN`         | 403    | The requesting student does not own the hold.                                              |
 | `NO_SEATS_AVAILABLE`           | 409    | No seat is available after due holds are reconciled.                                       |
