@@ -2,7 +2,20 @@
 
 @theme {
   --font-sans: "Inter", "Segoe UI", sans-serif;
-  --color-ink-950: #102a43;
+  --color-brand-navy: #0b1f3a;
+  --color-brand-indigo: #3949ab;
+  --color-brand-indigo-soft: #eef2ff;
+  --color-ink-950: #0f172a;
+  --color-ink-600: #475569;
+  --color-ink-400: #94a3b8;
+  --color-canvas: #f6f8fb;
+  --color-brand-border: #d9e2ec;
+  --color-brand-success: #047857;
+  --color-brand-success-soft: #ecfdf5;
+  --color-brand-warning: #b45309;
+  --color-brand-warning-soft: #fff7ed;
+  --color-brand-danger: #b42318;
+  --color-brand-danger-soft: #fef2f2;
 }
 
 @layer base {
@@ -20,7 +33,8 @@
   body {
     min-width: 320px;
     margin: 0;
-    background: #f8fafc;
+    background: var(--color-canvas);
+    color: var(--color-ink-950);
   }
 
   button,
@@ -29,8 +43,30 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    &:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--color-brand-indigo) 35%, transparent);
+      outline-offset: 3px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+
   ::selection {
     background: #c7d2fe;
-    color: #1e1b4b;
+    color: var(--color-brand-navy);
   }
 }

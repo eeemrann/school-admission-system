@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CheckCircle2, Users } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, Clock3, Users } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, StatusBadge } from "../../../components/ui/Badge";
@@ -76,9 +76,9 @@ export function StudentClassesPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        description="Browse the current class catalogue, then submit an application for a temporary seat reservation."
+        description="Explore available classes, review seat availability and reserve your place through the admission portal."
         eyebrow="Student portal"
-        title="Find your next class"
+        title="Find the right class for your next step"
         actions={
           <Link
             className="text-sm font-semibold text-indigo-700 hover:text-indigo-900"
@@ -96,14 +96,17 @@ export function StudentClassesPage() {
         <CreatedHoldNotice hold={visibleWorkflowState.createdHold} />
       ) : null}
       <section aria-labelledby="available-classes-heading" className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-950" id="available-classes-heading">
-              Available classes
+            <h2
+              className="text-xl font-bold tracking-tight text-slate-950"
+              id="available-classes-heading"
+            >
+              Explore available classes
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              Seat counts are authoritative API values; availability can change between viewing and
-              applying.
+              Seat counts come directly from the API and may change before an application is
+              submitted.
             </p>
           </div>
           <Badge tone="info">Live catalogue</Badge>
@@ -155,35 +158,66 @@ function ClassCard({
   workflowBusy: boolean;
 }) {
   const noSeats = admissionClass.availableSeats <= 0;
+  const availability = getAvailability(admissionClass.availableSeats);
   const disabled = noSeats || !studentId || workflowBusy;
 
   return (
-    <Card className="flex flex-col justify-between gap-6">
+    <Card className="group flex flex-col justify-between gap-5 p-5 transition duration-150 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(15,23,42,0.08)] sm:p-6">
       <div>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-indigo">
               Class offering
             </p>
-            <h3 className="mt-2 text-xl font-bold text-slate-950">{admissionClass.name}</h3>
+            <h3 className="mt-2 text-xl font-bold leading-tight text-slate-950">
+              {admissionClass.name}
+            </h3>
+            <p className="mt-2 break-all text-xs text-slate-500">Class ID · {admissionClass.id}</p>
           </div>
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-700">
-            <BookOpen aria-hidden="true" className="size-5" />
-          </span>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <span className="grid size-10 place-items-center rounded-xl bg-brand-indigo-soft text-brand-indigo">
+              <BookOpen aria-hidden="true" className="size-5" />
+            </span>
+            <span className={`text-right text-xs font-bold ${availability.textClass}`}>
+              {availability.label}
+            </span>
+          </div>
         </div>
-        <dl className="mt-5 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+
+        <div className="mt-6 flex items-end justify-between gap-4 rounded-2xl bg-brand-indigo-soft/60 p-4">
+          <div>
+            <p className="text-sm font-semibold text-indigo-950">Seats available</p>
+            <p className="mt-1 text-xs text-indigo-800/75">{availability.description}</p>
+          </div>
+          <p className="text-4xl font-bold tracking-tight text-brand-indigo">
+            {admissionClass.availableSeats}
+          </p>
+        </div>
+
+        <dl className="mt-4 grid grid-cols-3 divide-x divide-slate-200 rounded-xl border border-brand-border bg-slate-50/70 py-3 text-center">
           <SeatMetric label="Total" value={admissionClass.totalSeats} />
           <SeatMetric label="Held" value={admissionClass.heldSeats} />
           <SeatMetric label="Confirmed" value={admissionClass.confirmedSeats} />
-          <SeatMetric label="Available" tone="success" value={admissionClass.availableSeats} />
         </dl>
+
+        <SeatCapacityBar admissionClass={admissionClass} />
       </div>
-      <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-center gap-2 text-xs text-slate-500">
-          <Users aria-hidden="true" className="size-4" />
-          {noSeats ? "Currently full" : "Apply for a temporary reservation"}
+
+      <div className="flex flex-col gap-3 border-t border-brand-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="flex items-center gap-2 text-xs leading-5 text-slate-600">
+          {noSeats ? (
+            <Users aria-hidden="true" className="size-4 shrink-0 text-rose-700" />
+          ) : (
+            <Clock3 aria-hidden="true" className="size-4 shrink-0 text-brand-indigo" />
+          )}
+          {noSeats
+            ? "This class is currently full"
+            : studentId
+              ? "Reserve a seat temporarily"
+              : "Select your identity to apply"}
         </p>
         <Button
+          className="w-full sm:w-auto"
           disabled={disabled}
           isLoading={isSubmitting}
           title={
@@ -213,12 +247,15 @@ function CreatedHoldNotice({ hold }: { hold: CreatedHold }) {
   const status = holdQuery.data?.status ?? hold.status;
 
   return (
-    <Card className="border-emerald-200 bg-emerald-50/70">
+    <Card className="border-emerald-200 bg-emerald-50/70 shadow-[0_10px_28px_rgba(4,120,87,0.08)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex gap-3">
           <CheckCircle2 aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-emerald-700" />
           <div>
-            <h2 className="font-bold text-emerald-950">Seat temporarily reserved</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-bold text-emerald-950">Seat temporarily reserved</h2>
+              <Badge tone="success">Application created</Badge>
+            </div>
             <p className="mt-1 text-sm leading-6 text-emerald-900">
               Hold <code className="rounded bg-white/70 px-1.5 py-0.5 text-xs">{hold.holdId}</code>{" "}
               was created. Complete confirmation before the server-provided expiry time.
@@ -256,15 +293,69 @@ function formatDate(timestamp: string): string {
     : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function SeatMetric({ label, tone, value }: { label: string; tone?: "success"; value: number }) {
+function SeatMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3">
-      <dt
-        className={`text-xl font-bold ${tone === "success" ? "text-emerald-700" : "text-slate-900"}`}
-      >
-        {value}
-      </dt>
-      <dd className="mt-1 text-slate-500">{label}</dd>
+    <div className="px-2">
+      <dt className="text-lg font-bold text-slate-900">{value}</dt>
+      <dd className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </dd>
     </div>
   );
+}
+
+function SeatCapacityBar({ admissionClass }: { admissionClass: ClassSummary }) {
+  const occupiedSeats = admissionClass.heldSeats + admissionClass.confirmedSeats;
+  const capacity = Math.max(admissionClass.totalSeats, 1);
+  const utilization = Math.min(100, Math.max(0, (occupiedSeats / capacity) * 100));
+
+  return (
+    <div className="mt-4 space-y-2">
+      <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+        <span>Seat utilization</span>
+        <span className="font-semibold text-slate-700">{Math.round(utilization)}% occupied</span>
+      </div>
+      <div
+        aria-label={`${occupiedSeats} of ${admissionClass.totalSeats} seats occupied`}
+        aria-valuemax={admissionClass.totalSeats}
+        aria-valuemin={0}
+        aria-valuenow={occupiedSeats}
+        className="h-2 overflow-hidden rounded-full bg-slate-100"
+        role="progressbar"
+      >
+        <div
+          className="h-full rounded-full bg-brand-indigo transition-[width] duration-300"
+          style={{ width: `${utilization}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function getAvailability(availableSeats: number): {
+  description: string;
+  label: string;
+  textClass: string;
+} {
+  if (availableSeats <= 0) {
+    return {
+      description: "No seats remain in this class.",
+      label: "Fully occupied",
+      textClass: "text-rose-700",
+    };
+  }
+
+  if (availableSeats === 1) {
+    return {
+      description: "Only one seat remains.",
+      label: "Limited availability",
+      textClass: "text-amber-700",
+    };
+  }
+
+  return {
+    description: "Seats are currently available.",
+    label: "Seats available",
+    textClass: "text-emerald-700",
+  };
 }

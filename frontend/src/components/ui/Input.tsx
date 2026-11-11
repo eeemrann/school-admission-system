@@ -25,7 +25,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         id={inputId}
         aria-describedby={describedBy || undefined}
         aria-invalid={Boolean(error)}
-        className={`min-h-11 w-full rounded-xl border bg-white px-3.5 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${error ? "border-rose-400" : "border-slate-300"} ${className}`}
+        className={`min-h-11 w-full rounded-xl border bg-white px-3.5 text-sm text-slate-950 shadow-sm outline-none transition duration-150 placeholder:text-slate-400 focus:border-brand-indigo focus:ring-4 focus:ring-indigo-100 ${error ? "border-rose-400" : "border-brand-border"} ${className}`}
         {...props}
       />
       {hint ? (

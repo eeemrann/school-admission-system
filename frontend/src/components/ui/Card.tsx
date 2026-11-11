@@ -8,7 +8,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 export function Card({ children, className = "", tone = "default", ...props }: CardProps) {
   return (
     <div
-      className={`rounded-2xl border p-5 shadow-sm sm:p-6 ${cardTones[tone]} ${className}`}
+      className={`rounded-xl border p-5 shadow-[0_8px_24px_rgba(15,23,42,0.05)] sm:p-6 ${cardTones[tone]} ${className}`}
       {...props}
     >
       {children}
@@ -17,7 +17,7 @@ export function Card({ children, className = "", tone = "default", ...props }: C
 }
 
 const cardTones: Record<NonNullable<CardProps["tone"]>, string> = {
-  default: "border-slate-200 bg-white",
-  soft: "border-slate-200/80 bg-slate-50/80",
-  accent: "border-indigo-100 bg-indigo-50/60",
+  default: "border-brand-border bg-white",
+  soft: "border-brand-border/80 bg-slate-50/80",
+  accent: "border-indigo-100 bg-brand-indigo-soft/70",
 };

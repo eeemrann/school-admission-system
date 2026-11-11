@@ -7,7 +7,7 @@ import {
   ShieldAlert,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 const navigation = [
@@ -21,11 +21,55 @@ const breadcrumbLabels: Record<string, string> = {
 
 export function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(readDesktopMediaQuery);
   const location = useLocation();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const wasMobileOpenRef = useRef(false);
 
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.("(min-width: 1024px)");
+    if (!mediaQuery) {
+      return;
+    }
+
+    const updateDesktopState = () => setIsDesktop(mediaQuery.matches);
+    updateDesktopState();
+    mediaQuery.addEventListener?.("change", updateDesktopState);
+    return () => mediaQuery.removeEventListener?.("change", updateDesktopState);
+  }, []);
+
+  useEffect(() => {
+    if (mobileOpen && !wasMobileOpenRef.current) {
+      closeButtonRef.current?.focus();
+    }
+    if (!mobileOpen && wasMobileOpenRef.current) {
+      menuButtonRef.current?.focus();
+    }
+    wasMobileOpenRef.current = mobileOpen;
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMobileOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen]);
+
+  const sidebarInteractive = isDesktop || mobileOpen;
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -39,15 +83,22 @@ export function AdminLayout() {
       ) : null}
       <aside
         aria-label="Administrator navigation"
+        aria-hidden={!sidebarInteractive}
         id="administrator-navigation"
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-slate-950 text-slate-200 shadow-xl transition-transform lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+        aria-modal={mobileOpen && !isDesktop ? "true" : undefined}
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-brand-navy text-slate-200 shadow-xl transition-transform duration-200 motion-reduce:transition-none lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+        role={mobileOpen && !isDesktop ? "dialog" : "complementary"}
       >
         <div className="flex items-center gap-3 border-b border-white/10 px-6 py-6">
           <span className="grid size-10 place-items-center rounded-xl bg-indigo-500 text-white">
             <GraduationCap aria-hidden="true" className="size-5" />
           </span>
           <div>
-            <Link className="block text-sm font-bold tracking-tight text-white" to="/admin">
+            <Link
+              className="block text-sm font-bold tracking-tight text-white"
+              tabIndex={sidebarInteractive ? undefined : -1}
+              to="/admin"
+            >
               School Admission
             </Link>
             <span className="block text-xs text-slate-400">Administrator portal</span>
@@ -55,6 +106,8 @@ export function AdminLayout() {
           <button
             aria-label="Close administrator navigation"
             className="ml-auto rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 lg:hidden"
+            ref={closeButtonRef}
+            tabIndex={sidebarInteractive ? undefined : -1}
             onClick={() => setMobileOpen(false)}
             type="button"
           >
@@ -72,6 +125,7 @@ export function AdminLayout() {
               }
               end={item.end}
               key={item.to}
+              tabIndex={sidebarInteractive ? undefined : -1}
               to={item.to}
             >
               <Icon aria-hidden="true" className="size-5" />
@@ -96,6 +150,7 @@ export function AdminLayout() {
               aria-expanded={mobileOpen}
               aria-label="Open administrator navigation"
               className="rounded-lg p-2 text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 lg:hidden"
+              ref={menuButtonRef}
               onClick={() => setMobileOpen(true)}
               type="button"
             >
@@ -154,4 +209,8 @@ function getBreadcrumbs(pathname: string): Array<{ label: string; to?: string }>
   }
 
   return breadcrumbs;
+}
+
+function readDesktopMediaQuery(): boolean {
+  return window.matchMedia?.("(min-width: 1024px)").matches ?? true;
 }

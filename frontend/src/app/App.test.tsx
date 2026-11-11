@@ -5,11 +5,11 @@ describe("application shell", () => {
   it("renders the landing page and navigates to the student portal", async () => {
     render(<App />);
 
-    expect(screen.getByRole("heading", { name: /calmer way/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("link", { name: /open student portal/i }));
+    expect(screen.getByRole("heading", { name: /clearer path/i })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("link", { name: /browse available classes/i })[0]);
 
     expect(
-      await screen.findByRole("heading", { name: /find your next class/i }),
+      await screen.findByRole("heading", { name: /find the right class for your next step/i }),
     ).toBeInTheDocument();
   });
 

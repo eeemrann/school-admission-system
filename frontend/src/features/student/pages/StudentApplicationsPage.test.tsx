@@ -17,6 +17,17 @@ const heldApplication = {
 describe("StudentApplicationsPage", () => {
   beforeEach(() => vi.stubEnv("VITE_API_BASE_URL", "http://localhost:8080"));
 
+  it("shows only the identity empty state when no student is selected", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    renderWithProviders(<StudentApplicationsPage />);
+
+    expect(screen.getByText("Select a birth registration number")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.queryByText("No applications yet")).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("renders all application statuses and only offers actions for held applications", async () => {
     vi.stubGlobal(
       "fetch",
