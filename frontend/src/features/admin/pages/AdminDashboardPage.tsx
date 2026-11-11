@@ -1,6 +1,16 @@
-import { Activity, BookOpen, CheckCircle2, Clock3, Layers3, Users } from "lucide-react";
+import {
+  Activity,
+  ArrowUpRight,
+  BookOpen,
+  CheckCircle2,
+  Clock3,
+  Layers3,
+  RefreshCw,
+  Users,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "../../../components/ui/Badge";
+import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
@@ -18,19 +28,31 @@ export function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        description="Monitor the class catalogue and seat capacity using live values returned by the admission API."
+        description="Monitor published class offerings and make capacity decisions from live admission API data."
         eyebrow="Administration"
-        title="Operations dashboard"
+        title="Operations overview"
         actions={
-          <Link
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700"
-            to="/admin/classes"
-          >
-            Manage classes
-          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              disabled={classesQuery.isFetching}
+              isLoading={classesQuery.isFetching}
+              variant="secondary"
+              onClick={() => void classesQuery.refetch()}
+            >
+              <RefreshCw aria-hidden="true" className="size-4" />
+              Refresh data
+            </Button>
+            <Link
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-indigo px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-indigo"
+              to="/admin/classes"
+            >
+              Manage classes
+              <ArrowUpRight aria-hidden="true" className="size-4" />
+            </Link>
+          </div>
         }
       />
-      <Card className="border-amber-200 bg-amber-50/70">
+      <Card className="border-amber-200 bg-amber-50/70 shadow-[0_8px_24px_rgba(180,83,9,0.06)]">
         <div className="flex gap-3">
           <Activity aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-amber-700" />
           <div>
@@ -71,8 +93,8 @@ function DashboardContent({ classes }: { classes: readonly ClassSummary[] }) {
           </div>
           <Badge tone="info">API-backed</Badge>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <MetricCard icon={Layers3} label="Classes" value={metrics.totalClasses} />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+          <MetricCard highlight icon={Layers3} label="Classes" value={metrics.totalClasses} />
           <MetricCard icon={Users} label="Total capacity" value={metrics.totalCapacity} />
           <MetricCard icon={Clock3} label="Held seats" value={metrics.totalHeldSeats} />
           <MetricCard
@@ -82,6 +104,7 @@ function DashboardContent({ classes }: { classes: readonly ClassSummary[] }) {
           />
           <MetricCard icon={BookOpen} label="Available seats" value={metrics.totalAvailableSeats} />
           <MetricCard
+            highlight
             icon={Activity}
             label="Capacity utilized"
             value={`${metrics.utilizationPercent}%`}
@@ -134,7 +157,7 @@ function DashboardContent({ classes }: { classes: readonly ClassSummary[] }) {
               {classes.map((admissionClass) => (
                 <div key={admissionClass.id}>
                   <div className="mb-2 flex items-center justify-between gap-4 text-sm">
-                    <span className="truncate font-semibold text-slate-800">
+                    <span className="min-w-0 break-words font-semibold text-slate-800">
                       {admissionClass.name}
                     </span>
                     <span className="shrink-0 text-xs text-slate-500">
@@ -180,17 +203,21 @@ function DashboardContent({ classes }: { classes: readonly ClassSummary[] }) {
 }
 
 function MetricCard({
+  highlight = false,
   icon: Icon,
   label,
   value,
 }: {
+  highlight?: boolean;
   icon: typeof Activity;
   label: string;
   value: number | string;
 }) {
   return (
-    <Card className="flex items-center gap-4">
-      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-700">
+    <Card
+      className={`flex items-center gap-4 ${highlight ? "border-indigo-100 bg-brand-indigo-soft/45" : ""}`}
+    >
+      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-brand-indigo shadow-sm">
         <Icon aria-hidden="true" className="size-5" />
       </span>
       <div>

@@ -3,13 +3,14 @@ import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button, type ButtonVariant } from "./Button";
 
 interface DialogProps {
+  ariaDescribedBy?: string;
   open: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
 }
 
-export function Dialog({ open, title, onClose, children }: DialogProps) {
+export function Dialog({ ariaDescribedBy, open, title, onClose, children }: DialogProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
@@ -81,6 +82,7 @@ export function Dialog({ open, title, onClose, children }: DialogProps) {
         type="button"
       />
       <div
+        aria-describedby={ariaDescribedBy}
         aria-labelledby={titleId}
         aria-modal="true"
         className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
@@ -133,9 +135,13 @@ export function ConfirmationDialog({
   isLoading,
   ...props
 }: ConfirmationDialogProps) {
+  const descriptionId = useId();
+
   return (
-    <Dialog {...props}>
-      <p className="text-sm leading-6 text-slate-600">{description}</p>
+    <Dialog {...props} ariaDescribedBy={descriptionId}>
+      <p className="text-sm leading-6 text-slate-600" id={descriptionId}>
+        {description}
+      </p>
       <div className="mt-6 flex justify-end gap-3">
         <Button variant="secondary" onClick={props.onClose}>
           Cancel

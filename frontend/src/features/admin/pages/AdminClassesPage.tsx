@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, RefreshCw, Search, Users } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { EmptyState } from "../../../components/ui/EmptyState";
@@ -33,14 +33,30 @@ export function AdminClassesPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        description="Create and review class offerings through the existing class-management API. Seat counters are never estimated in the browser."
+        description="Create class offerings, review live seat counters and open a detailed capacity view."
         eyebrow="Administration"
         title="Class management"
         actions={
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus aria-hidden="true" className="size-4" />
-            New class
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              disabled={classesQuery.isFetching}
+              isLoading={classesQuery.isFetching}
+              variant="secondary"
+              onClick={() => void classesQuery.refetch()}
+            >
+              <RefreshCw aria-hidden="true" className="size-4" />
+              Refresh
+            </Button>
+            <Button
+              onClick={() => {
+                setCreatedNotice(false);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              New class
+            </Button>
+          </div>
         }
       />
       {createdNotice ? (
@@ -49,18 +65,21 @@ export function AdminClassesPage() {
       <section aria-labelledby="published-classes-heading" className="space-y-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-bold text-slate-950" id="published-classes-heading">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2
+                className="text-xl font-bold tracking-tight text-slate-950"
+                id="published-classes-heading"
+              >
                 Published classes
               </h2>
               <Badge tone="info">API-backed</Badge>
             </div>
             <p className="mt-1 text-sm text-slate-600">
-              Search by class name or open a row for its complete capacity view.
+              Search by class name or open an offering for its complete capacity view.
             </p>
           </div>
           {classesQuery.isSuccess && classesQuery.data.length > 0 ? (
-            <div className="w-full sm:w-72">
+            <div className="w-full sm:w-80">
               <Input
                 aria-label="Search classes by name"
                 label="Search classes"
@@ -90,7 +109,12 @@ export function AdminClassesPage() {
           />
         ) : null}
         {classesQuery.isSuccess && filteredClasses.length > 0 ? (
-          <AdminClassTable classes={filteredClasses} />
+          <>
+            <p className="text-xs font-semibold text-slate-500">
+              Showing {filteredClasses.length} of {classesQuery.data.length} offerings
+            </p>
+            <AdminClassTable classes={filteredClasses} />
+          </>
         ) : null}
       </section>
       <CreateClassDialog

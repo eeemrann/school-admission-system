@@ -39,7 +39,7 @@ describe("AdminClassDetailsPage", () => {
     expect(screen.getByText("100")).toBeInTheDocument();
     expect(screen.getByText("10")).toBeInTheDocument();
     expect(screen.getByText("60")).toBeInTheDocument();
-    expect(screen.getByText("30")).toBeInTheDocument();
+    expect(screen.getAllByText("30")).toHaveLength(2);
     expect(screen.getAllByText("70%").length).toBeGreaterThan(0);
   });
 

@@ -120,7 +120,7 @@ npm run test --prefix frontend -- --run
 docker build -f frontend/Dockerfile -t school-admission-frontend:local .
 ```
 
-The current backend test project includes 103 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, concurrency, direct migrator, and executable-process migration tests. The frontend has 51 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
+The current backend test project includes 103 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, concurrency, direct migrator, and executable-process migration tests. The frontend has 54 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
 
 ## End-to-end testing
 
@@ -172,7 +172,7 @@ AI_USAGE.md               AI-assisted development record
 | EF Core migration service/image                               | Complete; Compose runs it before the API                                                                                                                          |
 | Frontend Docker image                                         | Complete; Compose serves it on the documented frontend port                                                                                                       |
 | Docker Compose application                                    | Complete local stack with separate persistent volume; runtime verification reported below                                                                         |
-| Automated tests                                               | 103 backend tests pass, including migrator tests; the opt-in 1,000-request stress test also passes; frontend has 51 Vitest/RTL tests plus Playwright E2E coverage |
+| Automated tests                                               | 103 backend tests pass, including migrator tests; the opt-in 1,000-request stress test also passes; frontend has 54 Vitest/RTL tests plus Playwright E2E coverage |
 | CI/CD workflows                                               | Not started                                                                                                                                                       |
 
 The application is runnable through Docker Compose after the documented checks pass. CI/CD and public deployment remain outside this submission.

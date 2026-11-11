@@ -28,7 +28,9 @@ describe("Dialog", () => {
     fireEvent.click(trigger);
 
     const dialog = screen.getByRole("dialog", { name: "Review action" });
+    const description = within(dialog).getByText("Review this action before continuing.");
     const closeButton = within(dialog).getByRole("button", { name: "Close dialog" });
+    expect(dialog).toHaveAttribute("aria-describedby", description.id);
     expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     const confirmButton = within(dialog).getByRole("button", { name: "Confirm" });
     expect(closeButton).toHaveFocus();

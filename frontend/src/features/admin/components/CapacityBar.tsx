@@ -28,7 +28,7 @@ export function CapacityBar({
         role="progressbar"
       >
         <div
-          className="h-full rounded-full bg-indigo-600 transition-[width]"
+          className="h-full rounded-full bg-brand-indigo transition-[width]"
           style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
         />
       </div>

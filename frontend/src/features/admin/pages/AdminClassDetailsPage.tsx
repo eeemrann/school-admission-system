@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
+import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { LoadingIndicator } from "../../../components/ui/LoadingIndicator";
 import { PageHeader } from "../../../components/ui/PageHeader";
@@ -18,7 +19,7 @@ export function AdminClassDetailsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        description="The detail view is read-only because the current public API provides no edit or delete operation."
+        description="Review authoritative seat counters for this offering. Editing and deletion are not part of the current API contract."
         eyebrow="Class details"
         title={classQuery.data?.name ?? "Class details"}
         actions={
@@ -31,15 +32,23 @@ export function AdminClassDetailsPage() {
           </Link>
         }
       />
-      {classQuery.isPending ? <LoadingIndicator label="Loading class details" /> : null}
-      {classQuery.isError ? (
+      {!classId ? (
+        <EmptyState
+          description="Return to the class register and choose an offering to view its capacity details."
+          icon={BookOpen}
+          title="Class identifier missing"
+        />
+      ) : classQuery.isPending ? (
+        <LoadingIndicator label="Loading class details" />
+      ) : classQuery.isError ? (
         <ErrorState
           error={classQuery.error}
           onRetry={() => void classQuery.refetch()}
           title="We could not load this class"
         />
+      ) : classQuery.isSuccess ? (
+        <ClassDetails admissionClass={classQuery.data} />
       ) : null}
-      {classQuery.isSuccess ? <ClassDetails admissionClass={classQuery.data} /> : null}
     </div>
   );
 }
@@ -50,7 +59,7 @@ function ClassDetails({ admissionClass }: { admissionClass: ClassSummary }) {
 
   return (
     <>
-      <Card className="border-indigo-100 bg-indigo-50/60">
+      <Card className="border-indigo-100 bg-brand-indigo-soft/60">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex gap-4">
             <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white text-indigo-700 shadow-sm">
@@ -66,11 +75,27 @@ function ClassDetails({ admissionClass }: { admissionClass: ClassSummary }) {
               <p className="mt-2 font-mono text-xs text-slate-600">{admissionClass.id}</p>
             </div>
           </div>
-          <Badge tone={admissionClass.availableSeats > 0 ? "success" : "danger"}>
-            {admissionClass.availableSeats > 0
-              ? `${admissionClass.availableSeats} available`
-              : "Full"}
-          </Badge>
+          <div className="flex shrink-0 flex-col items-start gap-2 rounded-2xl bg-white p-4 shadow-sm sm:items-end">
+            <Badge
+              tone={
+                admissionClass.availableSeats <= 0
+                  ? "danger"
+                  : admissionClass.availableSeats === 1
+                    ? "warning"
+                    : "success"
+              }
+            >
+              {admissionClass.availableSeats <= 0
+                ? "Fully occupied"
+                : admissionClass.availableSeats === 1
+                  ? "Limited availability"
+                  : "Seats available"}
+            </Badge>
+            <p className="text-3xl font-bold tracking-tight text-brand-indigo">
+              {admissionClass.availableSeats}
+            </p>
+            <p className="text-xs font-semibold text-slate-500">seats available</p>
+          </div>
         </div>
         <div className="mt-8">
           <CapacityBar occupiedSeats={occupiedSeats} totalSeats={admissionClass.totalSeats} />
@@ -88,6 +113,7 @@ function ClassDetails({ admissionClass }: { admissionClass: ClassSummary }) {
           value={admissionClass.confirmedSeats}
         />
         <DetailMetric
+          emphasis
           icon={BookOpen}
           label="Available seats"
           value={admissionClass.availableSeats}
@@ -112,17 +138,21 @@ function ClassDetails({ admissionClass }: { admissionClass: ClassSummary }) {
 }
 
 function DetailMetric({
+  emphasis = false,
   icon: Icon,
   label,
   value,
 }: {
+  emphasis?: boolean;
   icon: LucideIcon;
   label: string;
   value: number;
 }) {
   return (
-    <Card className="flex items-center gap-4">
-      <span className="grid size-10 place-items-center rounded-xl bg-slate-100 text-slate-700">
+    <Card
+      className={`flex items-center gap-4 ${emphasis ? "border-indigo-100 bg-brand-indigo-soft/45" : ""}`}
+    >
+      <span className="grid size-10 place-items-center rounded-xl bg-white text-brand-indigo shadow-sm">
         <Icon aria-hidden="true" className="size-5" />
       </span>
       <div>

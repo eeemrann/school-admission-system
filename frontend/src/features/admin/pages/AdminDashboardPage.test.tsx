@@ -79,6 +79,27 @@ describe("AdminDashboardPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Dashboard unavailable.");
   });
 
+  it("refreshes dashboard data from the API", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(classes))
+      .mockResolvedValueOnce(
+        jsonResponse([{ ...classes[0], totalSeats: 110, availableSeats: 40 }, classes[1]]),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    renderWithProviders(
+      <MemoryRouter>
+        <AdminDashboardPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("heading", { name: "Capacity snapshot" });
+    fireEvent.click(screen.getByRole("button", { name: /refresh data/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect((await screen.findAllByText("160")).length).toBeGreaterThan(0);
+  });
+
   it("retries a failed dashboard request", async () => {
     const fetchMock = vi
       .fn()
