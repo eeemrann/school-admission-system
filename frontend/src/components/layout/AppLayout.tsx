@@ -71,7 +71,7 @@ export function AppLayout() {
                 <span
                   className={`block truncate text-[10px] font-semibold ${studentId ? "text-emerald-700" : "text-slate-500"}`}
                 >
-                  {studentId ? maskedStudentId : "Name + birth registration needed"}
+                  {studentId ? maskedStudentId : "Birth registration needed"}
                 </span>
               </span>
             </div>

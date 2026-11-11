@@ -49,7 +49,7 @@ describe("StudentApplicationsPage", () => {
     expect(screen.getByText("CONFIRMED")).toBeInTheDocument();
     expect(screen.getByText("EXPIRED")).toBeInTheDocument();
     expect(screen.getByText("CANCELLED")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /confirm admission/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /pay admission fee/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cancel reservation/i })).toBeInTheDocument();
   });
 
@@ -62,9 +62,9 @@ describe("StudentApplicationsPage", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
-    fireEvent.click(await screen.findByRole("button", { name: /confirm admission/i }));
-    const dialog = await screen.findByRole("dialog", { name: /confirm admission/i });
-    fireEvent.click(within(dialog).getByRole("button", { name: /confirm admission/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /pay admission fee/i }));
+    const dialog = await screen.findByRole("dialog", { name: /pay admission fee/i });
+    fireEvent.click(within(dialog).getByRole("button", { name: /pay admission fee/i }));
 
     expect(await screen.findByText(/Admission confirmed\./)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("CONFIRMED")).toBeInTheDocument());
@@ -104,9 +104,9 @@ describe("StudentApplicationsPage", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
-    fireEvent.click(await screen.findByRole("button", { name: /confirm admission/i }));
-    const dialog = await screen.findByRole("dialog", { name: /confirm admission/i });
-    fireEvent.click(within(dialog).getByRole("button", { name: /confirm admission/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /pay admission fee/i }));
+    const dialog = await screen.findByRole("dialog", { name: /pay admission fee/i });
+    fireEvent.click(within(dialog).getByRole("button", { name: /pay admission fee/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The hold has expired");
     await waitFor(() => expect(screen.getByText("EXPIRED")).toBeInTheDocument());
@@ -205,7 +205,7 @@ describe("StudentApplicationsPage", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(screen.queryByText("EXPIRED")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /confirm admission/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /pay admission fee/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /cancel reservation/i })).toBeDisabled();
 
     resolveHold?.(
@@ -217,7 +217,7 @@ describe("StudentApplicationsPage", () => {
       }),
     );
     await vi.waitFor(() => expect(screen.getByText("EXPIRED")).toBeInTheDocument());
-    expect(screen.queryByRole("button", { name: /confirm admission/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /pay admission fee/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /cancel reservation/i })).not.toBeInTheDocument();
   });
 });

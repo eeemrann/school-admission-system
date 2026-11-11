@@ -6,7 +6,7 @@ This document makes decisions explicit where the supplied requirements do not fu
 
 - No login or authentication system is required.
 - `X-Student-Id` is required for hold creation, confirmation, cancellation, and the student's application list. It is treated as a trimmed, exactly 17-digit numeric birth registration number.
-- The student portal collects a human-facing student name alongside that number and stores the name in browser local storage for the profile display; the name is not part of the API identity contract or an authentication credential.
+- The student portal may collect an optional human-facing student name and stores it in browser local storage for the profile display; the name is not part of the API identity contract or an authentication credential. The 17-digit number alone is sufficient to select the assignment identity.
 - The header is an assignment-level identity selector, not a security proof. The API must still enforce that a student can mutate only their own hold.
 - Class creation is available to the administrator UI without a separate admin login because no admin authentication contract was supplied.
 

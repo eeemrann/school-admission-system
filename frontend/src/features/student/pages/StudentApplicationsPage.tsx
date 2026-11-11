@@ -231,7 +231,8 @@ function ApplicationRow({
         ) : null}
       </div>
 
-      <dl className="mt-5 border-t border-brand-border pt-4">
+      <dl className="mt-5 grid gap-4 border-t border-brand-border pt-4 sm:grid-cols-2">
+        <ApplicationDetail label="Hold ID" value={application.holdId} />
         <ApplicationDetail
           label={status === "HELD" ? "Expires" : "Reservation window"}
           value={formatDate(application.expiresAt)}
@@ -255,7 +256,7 @@ function ApplicationRow({
               size="sm"
               onClick={() => setConfirmOpen(true)}
             >
-              Confirm admission
+              Pay admission fee
             </Button>
             <Button
               className="w-full sm:w-auto"
@@ -275,11 +276,11 @@ function ApplicationRow({
         {actionError ? <InlineNotice tone="error">{actionError}</InlineNotice> : null}
       </div>
       <ConfirmationDialog
-        confirmLabel="Confirm admission"
+        confirmLabel="Pay admission fee"
         description="This records the simulated admission-fee confirmation for this reservation. No payment provider or financial transaction is involved."
         isLoading={confirmMutation.isPending}
         open={confirmOpen}
-        title="Confirm admission?"
+        title="Pay admission fee?"
         onClose={() => setConfirmOpen(false)}
         onConfirm={confirm}
       />

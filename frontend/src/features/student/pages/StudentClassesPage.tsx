@@ -328,6 +328,10 @@ function CreatedHoldNotice({ hold }: { hold: CreatedHold }) {
             >
               Open application history
             </Link>
+            <p className="mt-3 text-xs text-emerald-900">
+              <span className="font-semibold">Hold ID: </span>
+              <code className="break-all font-mono">{hold.holdId}</code>
+            </p>
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">

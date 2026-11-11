@@ -33,7 +33,7 @@ export function StudentIdentitySelector() {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-extrabold tracking-tight text-slate-950">
-              {studentName ? "Your student profile" : "Create your student profile"}
+              {studentId ? "Your student profile" : "Select your student identity"}
             </h2>
             {studentId ? (
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
@@ -43,7 +43,8 @@ export function StudentIdentitySelector() {
             ) : null}
           </div>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-            Add your name and 17-digit birth registration number to view and manage applications.
+            Enter your 17-digit birth registration number to view and manage applications. A name is
+            optional and is used only as a local display label.
           </p>
         </div>
       </div>
@@ -51,7 +52,8 @@ export function StudentIdentitySelector() {
         <div className="grid gap-4 md:grid-cols-2">
           <Input
             autoComplete="name"
-            label="Student name"
+            hint="Optional display name; it is not sent to the API."
+            label="Student name (optional)"
             onChange={(event) => {
               setNameDraft(event.target.value);
               if (error) setError(undefined);

@@ -5,6 +5,7 @@ afterEach(() => {
   resetApiClientForTests();
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   window.localStorage.clear();
   window.history.replaceState({}, "", "/");
 });

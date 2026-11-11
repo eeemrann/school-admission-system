@@ -101,7 +101,7 @@ npm install --prefix frontend
 npm run dev --prefix frontend
 ```
 
-The browser talks to `VITE_API_BASE_URL` (default placeholder `http://localhost:8080`) and never connects to PostgreSQL. The student portal asks for a display name and exactly 17 numeric birth-registration digits, sends the trimmed number as `X-Student-Id`, and stores both values in browser local storage for convenience only; neither value is authentication or proof of identity. The name appears in the profile control at the top right, while the number remains masked. Class availability refreshes automatically every five seconds, while the backend remains authoritative for capacity, ownership, status, and expiry. The student portal supports the complete browse, hold, countdown, confirm, cancel, and history workflow through the existing contract. The administrator portal provides API-backed class metrics, searchable class management, class creation, human-readable class-name updates, safe capacity increases, and read-only capacity details. Administrator routes are intentionally unauthenticated because no administrator authentication contract exists.
+The browser talks to `VITE_API_BASE_URL` (default placeholder `http://localhost:8080`) and never connects to PostgreSQL. The student portal requires exactly 17 numeric birth-registration digits, sends the trimmed number as `X-Student-Id`, and stores the identifier in browser local storage for convenience only; it is neither authentication nor proof of identity. An optional display name may also be stored locally and is never sent to the API. Class availability refreshes automatically every five seconds, while the backend remains authoritative for capacity, ownership, status, and expiry. The student portal supports the complete browse, hold, countdown, pay-admission-fee confirmation, cancellation, and history workflow through the existing contract. The administrator portal provides API-backed class metrics, searchable class management, class creation, human-readable class-name updates, safe capacity increases, and read-only capacity details. Administrator routes are intentionally unauthenticated because no administrator authentication contract exists.
 
 ## Verification
 
@@ -120,7 +120,7 @@ npm run test --prefix frontend -- --run
 docker build -f frontend/Dockerfile -t school-admission-frontend:local .
 ```
 
-The current backend test project includes 103 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, concurrency, direct migrator, and executable-process migration tests. The frontend has 54 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
+The current backend test project includes 110 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, concurrency, direct migrator, and executable-process migration tests. The frontend has 60 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
 
 ## End-to-end testing
 
@@ -172,7 +172,7 @@ AI_USAGE.md               AI-assisted development record
 | EF Core migration service/image                               | Complete; Compose runs it before the API                                                                                                                          |
 | Frontend Docker image                                         | Complete; Compose serves it on the documented frontend port                                                                                                       |
 | Docker Compose application                                    | Complete local stack with separate persistent volume; runtime verification reported below                                                                         |
-| Automated tests                                               | 103 backend tests pass, including migrator tests; the opt-in 1,000-request stress test also passes; frontend has 54 Vitest/RTL tests plus Playwright E2E coverage |
+| Automated tests                                               | 110 backend tests pass, including migrator tests; the opt-in 1,000-request stress test also passes; frontend has 60 Vitest/RTL tests plus Playwright E2E coverage |
 | CI/CD workflows                                               | Not started                                                                                                                                                       |
 
 The application is runnable through Docker Compose after the documented checks pass. CI/CD and public deployment remain outside this submission.

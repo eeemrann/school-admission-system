@@ -31,24 +31,33 @@ export function StudentIdentityProvider({ children }: { children: ReactNode }) {
   );
 
   const setStudentIdentity = useCallback(
-    (rawStudentId: string, rawStudentName: string) => {
+    (rawStudentId: string, rawStudentName = "") => {
       const idResult = validateStudentId(rawStudentId);
       if (!idResult.ok || !idResult.value) {
         return idResult;
       }
 
-      const nameResult = validateStudentName(rawStudentName);
-      if (!nameResult.ok || !nameResult.value) {
-        return nameResult;
+      const trimmedName = rawStudentName.trim();
+      let normalizedName: string | null = null;
+      if (trimmedName) {
+        const nameResult = validateStudentName(rawStudentName);
+        if (!nameResult.ok || !nameResult.value) {
+          return nameResult;
+        }
+        normalizedName = nameResult.value;
       }
 
       if (idResult.value !== studentId) {
         queryClient.removeQueries({ queryKey: ["student"] });
       }
       setStudentIdState(idResult.value);
-      setStudentNameState(nameResult.value);
+      setStudentNameState(normalizedName);
       writeStoredStudentId(idResult.value);
-      writeStoredStudentName(nameResult.value);
+      if (normalizedName) {
+        writeStoredStudentName(normalizedName);
+      } else {
+        removeStoredStudentName();
+      }
       return idResult;
     },
     [queryClient, studentId],

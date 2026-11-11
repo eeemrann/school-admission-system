@@ -24,6 +24,9 @@ function IdentityProbe() {
       <button onClick={() => setStudentIdentity("  20152691234560048  ", "  Samira  Rahman ")}>
         Set identity
       </button>
+      <button onClick={() => setStudentIdentity("  20152691234560048  ")}>
+        Set identifier only
+      </button>
     </div>
   );
 }
@@ -56,5 +59,12 @@ describe("student identity", () => {
 
     expect(screen.getByText("20152691234560048")).toBeInTheDocument();
     expect(screen.getByText("Samira Rahman")).toBeInTheDocument();
+  });
+
+  it("accepts an identifier without requiring a display name", () => {
+    renderIdentityProbe();
+
+    fireEvent.click(screen.getByRole("button", { name: "Set identifier only" }));
+    expect(screen.getByText("20152691234560048")).toBeInTheDocument();
   });
 });

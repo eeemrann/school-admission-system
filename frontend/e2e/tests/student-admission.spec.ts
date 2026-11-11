@@ -60,10 +60,10 @@ test.describe("student admission workflow", () => {
     await expect(page.getByText("HELD", { exact: true })).toBeVisible();
     await expect(page.getByText(holdId as string)).toBeVisible();
 
-    await page.getByRole("button", { name: /confirm admission/i }).click();
-    const dialog = page.getByRole("dialog", { name: /confirm admission/i });
+    await page.getByRole("button", { name: /pay admission fee/i }).click();
+    const dialog = page.getByRole("dialog", { name: /pay admission fee/i });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole("button", { name: /confirm admission/i }).click();
+    await dialog.getByRole("button", { name: /pay admission fee/i }).click();
     await expect(page.getByText("Admission confirmed.")).toBeVisible();
     await expect(page.getByText("CONFIRMED", { exact: true })).toBeVisible();
 
@@ -222,7 +222,7 @@ test.describe("student admission workflow", () => {
     await selectStudent(page, studentA);
     await page.reload();
     await expect(page.getByText("EXPIRED", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /confirm admission/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /pay admission fee/i })).not.toBeVisible();
     await expect(page.getByRole("button", { name: /cancel reservation/i })).not.toBeVisible();
     await expect
       .poll(async () => (await getClass(request, admissionClass.id)).availableSeats)
@@ -275,7 +275,7 @@ test.describe("student admission workflow", () => {
 
     releaseAuthoritativeResponse?.();
     await expect(page.getByText("EXPIRED", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /confirm admission/i })).not.toBeVisible();
+    await expect(page.getByRole("button", { name: /pay admission fee/i })).not.toBeVisible();
     await expect(page.getByRole("button", { name: /cancel reservation/i })).not.toBeVisible();
     await page.unroute(`**/api/holds/${holdId}`);
   });

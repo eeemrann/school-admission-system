@@ -5,7 +5,7 @@ export interface StudentIdentityContextValue {
   studentId: string | null;
   studentName: string | null;
   setStudentId: (rawStudentId: string) => StudentIdentityResult;
-  setStudentIdentity: (rawStudentId: string, rawStudentName: string) => StudentIdentityResult;
+  setStudentIdentity: (rawStudentId: string, rawStudentName?: string) => StudentIdentityResult;
   clearStudentId: () => void;
 }
 
