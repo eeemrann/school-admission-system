@@ -5,7 +5,7 @@ This document makes decisions explicit where the supplied requirements do not fu
 ## Identity and authorization
 
 - No login or authentication system is required.
-- `X-Student-Id` is required for hold creation, confirmation, cancellation, and the student's application list. It is treated as an opaque, trimmed, non-empty student registration identifier.
+- `X-Student-Id` is required for hold creation, confirmation, cancellation, and the student's application list. It is treated as a trimmed, exactly 17-digit numeric birth registration number.
 - The header is an assignment-level identity selector, not a security proof. The API must still enforce that a student can mutate only their own hold.
 - Class creation is available to the administrator UI without a separate admin login because no admin authentication contract was supplied.
 
@@ -74,4 +74,3 @@ This document makes decisions explicit where the supplied requirements do not fu
 2. Whether a duplicate hold request should return `409` as proposed, or be idempotent and return the existing hold.
 3. Whether cancellation of an already cancelled hold should be idempotent as proposed.
 4. Whether class names must be unique; the supplied contract does not require uniqueness, so the default is to allow duplicate names while IDs remain unique.
-5. Whether student IDs have a fixed format/length; the contract only supplies an example, so validation is limited to a safe non-empty identifier until the owner specifies a format.

@@ -24,6 +24,13 @@ export function uniqueValue(prefix: string): string {
   return `${prefix}-${Date.now()}-${randomUUID().slice(0, 8)}`;
 }
 
+export function uniqueStudentId(): string {
+  const numericSuffix = (BigInt(`0x${randomUUID().replaceAll("-", "")}`) % 10_000_000_000n)
+    .toString()
+    .padStart(10, "0");
+  return `2015269${numericSuffix}`;
+}
+
 export async function createClass(
   request: APIRequestContext,
   name: string,

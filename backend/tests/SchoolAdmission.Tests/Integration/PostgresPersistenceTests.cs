@@ -45,7 +45,7 @@ public sealed class PostgresPersistenceTests(PostgresFixture fixture)
     public async Task CanCreateAdmissionHold()
     {
         var admissionClass = CreateAdmissionClass();
-        var admissionHold = CreateAdmissionHold(admissionClass.Id, "student-create");
+        var admissionHold = CreateAdmissionHold(admissionClass.Id, "20152691234560043");
 
         await using var dbContext = fixture.CreateDbContext();
         dbContext.AdmissionClasses.Add(admissionClass);
@@ -62,7 +62,7 @@ public sealed class PostgresPersistenceTests(PostgresFixture fixture)
     public async Task AdmissionHoldReferencesItsAdmissionClass()
     {
         var admissionClass = CreateAdmissionClass();
-        var admissionHold = CreateAdmissionHold(admissionClass.Id, "student-relation");
+        var admissionHold = CreateAdmissionHold(admissionClass.Id, "20152691234560044");
 
         await using var dbContext = fixture.CreateDbContext();
         dbContext.AdmissionClasses.Add(admissionClass);
@@ -94,7 +94,7 @@ public sealed class PostgresPersistenceTests(PostgresFixture fixture)
     public async Task PartialUniqueIndexRejectsDuplicateActiveHolds()
     {
         var admissionClass = CreateAdmissionClass();
-        var firstHold = CreateAdmissionHold(admissionClass.Id, "student-duplicate");
+        var firstHold = CreateAdmissionHold(admissionClass.Id, "20152691234560033");
 
         await using (var firstContext = fixture.CreateDbContext())
         {
@@ -113,7 +113,7 @@ public sealed class PostgresPersistenceTests(PostgresFixture fixture)
     public async Task AllowsNewHoldAfterExpiredHold()
     {
         var admissionClass = CreateAdmissionClass();
-        var expiredHold = CreateAdmissionHold(admissionClass.Id, "student-expired", HoldStatus.Expired);
+        var expiredHold = CreateAdmissionHold(admissionClass.Id, "20152691234560045", HoldStatus.Expired);
 
         await using var dbContext = fixture.CreateDbContext();
         dbContext.AdmissionClasses.Add(admissionClass);
@@ -129,7 +129,7 @@ public sealed class PostgresPersistenceTests(PostgresFixture fixture)
     public async Task AllowsNewHoldAfterCancelledHold()
     {
         var admissionClass = CreateAdmissionClass();
-        var cancelledHold = CreateAdmissionHold(admissionClass.Id, "student-cancelled", HoldStatus.Cancelled);
+        var cancelledHold = CreateAdmissionHold(admissionClass.Id, "20152691234560046", HoldStatus.Cancelled);
 
         await using var dbContext = fixture.CreateDbContext();
         dbContext.AdmissionClasses.Add(admissionClass);

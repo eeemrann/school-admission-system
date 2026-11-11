@@ -118,7 +118,7 @@ public sealed class HoldsController(IHoldReservationService holdReservationServi
             HttpContext,
             StatusCodes.Status400BadRequest,
             "STUDENT_ID_REQUIRED",
-            "Student ID required",
+            "Birth registration number required",
             "student-id-required",
             error.Detail,
             error.Errors),

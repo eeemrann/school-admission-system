@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { StudentClassesPage } from "./StudentClassesPage";
 import {
@@ -19,7 +19,7 @@ const availableClass = {
 const createdHold = {
   holdId: "h_11111111111111111111111111111111",
   classId: availableClass.id,
-  studentId: "student-a",
+  studentId: "20152691234560049",
   status: "HELD",
   expiresAt: "2099-11-10T12:10:00.000Z",
 };
@@ -33,7 +33,7 @@ describe("StudentClassesPage admission creation", () => {
       <MemoryRouter>
         <StudentClassesPage />
       </MemoryRouter>,
-      { studentId: "student-a" },
+      { studentId: "20152691234560049" },
     );
 
     expect(screen.getByRole("status")).toHaveTextContent("Loading classes");
@@ -52,7 +52,7 @@ describe("StudentClassesPage admission creation", () => {
       <MemoryRouter>
         <StudentClassesPage />
       </MemoryRouter>,
-      { studentId: "student-a" },
+      { studentId: "20152691234560049" },
     );
 
     expect(await screen.findByText("Class 6 - Morning Shift")).toBeInTheDocument();
@@ -66,7 +66,34 @@ describe("StudentClassesPage admission creation", () => {
 
     const holdRequest = fetchMock.mock.calls[1] as [string, RequestInit];
     expect(holdRequest[0]).toBe(`http://localhost:8080/classes/${availableClass.id}/holds`);
-    expect(new Headers(holdRequest[1].headers).get("X-Student-Id")).toBe("student-a");
+    expect(new Headers(holdRequest[1].headers).get("X-Student-Id")).toBe("20152691234560049");
+  });
+
+  it("refreshes class availability automatically", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([availableClass]))
+      .mockResolvedValueOnce(
+        jsonResponse([{ ...availableClass, heldSeats: 3, availableSeats: 4 }]),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    renderWithProviders(
+      <MemoryRouter>
+        <StudentClassesPage />
+      </MemoryRouter>,
+      { studentId: "20152691234560049" },
+    );
+
+    expect(await screen.findByText("Class 6 - Morning Shift")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByText("4")).toBeInTheDocument();
   });
 
   it("keeps the apply button unavailable when capacity is exhausted", async () => {
@@ -80,7 +107,7 @@ describe("StudentClassesPage admission creation", () => {
       <MemoryRouter>
         <StudentClassesPage />
       </MemoryRouter>,
-      { studentId: "student-a" },
+      { studentId: "20152691234560049" },
     );
 
     const button = await screen.findByRole("button", { name: /no seats available/i });
@@ -116,7 +143,7 @@ describe("StudentClassesPage admission creation", () => {
       <MemoryRouter>
         <StudentClassesPage />
       </MemoryRouter>,
-      { studentId: "student-a" },
+      { studentId: "20152691234560049" },
     );
 
     const button = await screen.findByRole("button", { name: /apply for admission/i });
@@ -149,7 +176,7 @@ describe("StudentClassesPage admission creation", () => {
       <MemoryRouter>
         <StudentClassesPage />
       </MemoryRouter>,
-      { studentId: "student-a" },
+      { studentId: "20152691234560049" },
     );
 
     fireEvent.click(await screen.findByRole("button", { name: /apply for admission/i }));
@@ -178,7 +205,7 @@ describe("StudentClassesPage admission creation", () => {
       <MemoryRouter>
         <StudentClassesPage />
       </MemoryRouter>,
-      { studentId: "student-a" },
+      { studentId: "20152691234560049" },
     );
 
     fireEvent.click(await screen.findByRole("button", { name: /apply for admission/i }));
@@ -191,7 +218,7 @@ describe("StudentClassesPage admission creation", () => {
     ).toHaveTextContent(/^\d{2}:\d{2}$/);
 
     fireEvent.change(screen.getByLabelText("Birth Registration Number"), {
-      target: { value: "student-b" },
+      target: { value: "20152691234560050" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Change number" }));
 
@@ -218,14 +245,14 @@ describe("StudentClassesPage admission creation", () => {
       <MemoryRouter>
         <StudentClassesPage />
       </MemoryRouter>,
-      { studentId: "student-a" },
+      { studentId: "20152691234560049" },
     );
 
     fireEvent.click(await screen.findByRole("button", { name: /apply for admission/i }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
 
     fireEvent.change(screen.getByLabelText("Birth Registration Number"), {
-      target: { value: "student-b" },
+      target: { value: "20152691234560050" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Change number" }));
     resolveHold?.(jsonResponse(createdHold, 201));

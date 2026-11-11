@@ -13,7 +13,7 @@ http://localhost:8080
 ## Common conventions
 
 - `Content-Type: application/json` is required for JSON request bodies.
-- `X-Student-Id` is required exactly where an operation below specifies it. Its value is an opaque student registration identifier.
+- `X-Student-Id` is required exactly where an operation below specifies it. Its value must be exactly 17 ASCII numeric digits representing the student's birth registration number.
 - IDs are opaque strings. Class IDs use the `c_` prefix followed by a UUID without hyphens. Hold IDs use the `h_` prefix followed by a UUID without hyphens.
 - All timestamps are UTC and use an explicit `Z` suffix or equivalent offset.
 - Expected failures use `application/problem+json` with an RFC 7807-style object:
@@ -142,7 +142,7 @@ The default hold duration is 600 seconds and is configurable with `HOLD_DURATION
 
 ### Expected errors
 
-- `400 Bad Request`: missing or blank `X-Student-Id`, or a malformed class ID.
+- `400 Bad Request`: missing or invalid `X-Student-Id`, or a malformed class ID. The identity must contain exactly 17 numeric digits.
 - `404 Not Found`: no class exists for `classId`.
 - `409 Conflict`: no seats are available or the student already has an active application for this class.
 
@@ -198,7 +198,7 @@ The operation is idempotent for the owning student and an already `CONFIRMED` ho
 
 ### Expected errors
 
-- `400 Bad Request`: missing or invalid `X-Student-Id`.
+- `400 Bad Request`: missing or invalid `X-Student-Id`; the identity must contain exactly 17 numeric digits.
 - `403 Forbidden`: the hold belongs to a different student.
 - `404 Not Found`: no hold exists for `holdId`.
 - `409 Conflict`: the hold is expired, cancelled, or otherwise cannot be confirmed.
@@ -218,7 +218,7 @@ The application remains in history with status `CANCELLED`. Repeating cancellati
 
 ### Expected errors
 
-- `400 Bad Request`: missing or invalid `X-Student-Id`.
+- `400 Bad Request`: missing or invalid `X-Student-Id`; the identity must contain exactly 17 numeric digits.
 - `403 Forbidden`: the hold belongs to a different student.
 - `404 Not Found`: no hold exists for `holdId`.
 - `409 Conflict`: the hold is `EXPIRED` or `CONFIRMED` and cannot be cancelled through this contract.
@@ -251,7 +251,7 @@ Results are ordered deterministically by newest `CreatedAt` first, then by hold 
 
 ### Expected errors
 
-- `400 Bad Request`: missing or invalid `X-Student-Id`.
+- `400 Bad Request`: missing or invalid `X-Student-Id`; the identity must contain exactly 17 numeric digits.
 
 ## Status and capacity rules
 
@@ -265,17 +265,17 @@ Results are ordered deterministically by newest `CreatedAt` first, then by hold 
 
 The success responses, paths, headers, field names, and success status codes above are fixed. The following machine-readable error codes are a separate, non-success convention to make expected 4xx responses understandable to the frontend. They do not change the success contract.
 
-| Code | Status | Meaning |
-| --- | --- | --- |
-| `VALIDATION_ERROR` | 400 | Request body, path value, or header is invalid. |
-| `STUDENT_ID_REQUIRED` | 400 | A required `X-Student-Id` header is missing or blank. |
-| `CLASS_NOT_FOUND` | 404 | The requested class does not exist. |
-| `HOLD_NOT_FOUND` | 404 | The requested hold does not exist. |
-| `HOLD_OWNER_FORBIDDEN` | 403 | The requesting student does not own the hold. |
-| `NO_SEATS_AVAILABLE` | 409 | No seat is available after due holds are reconciled. |
-| `DUPLICATE_ACTIVE_APPLICATION` | 409 | The student already has a `HELD` or `CONFIRMED` application for the class. |
-| `HOLD_EXPIRED` | 409 | The hold has expired or `expiresAt <= currentUtcTime`. |
-| `HOLD_CANCELLED` | 409 | The hold has already been cancelled. |
-| `CONFIRMED_HOLD_CANNOT_CANCEL` | 409 | A confirmed admission cannot be cancelled through this contract. |
+| Code                           | Status | Meaning                                                                                    |
+| ------------------------------ | ------ | ------------------------------------------------------------------------------------------ |
+| `VALIDATION_ERROR`             | 400    | Request body, path value, or header is invalid.                                            |
+| `STUDENT_ID_REQUIRED`          | 400    | A required `X-Student-Id` header is missing or does not contain exactly 17 numeric digits. |
+| `CLASS_NOT_FOUND`              | 404    | The requested class does not exist.                                                        |
+| `HOLD_NOT_FOUND`               | 404    | The requested hold does not exist.                                                         |
+| `HOLD_OWNER_FORBIDDEN`         | 403    | The requesting student does not own the hold.                                              |
+| `NO_SEATS_AVAILABLE`           | 409    | No seat is available after due holds are reconciled.                                       |
+| `DUPLICATE_ACTIVE_APPLICATION` | 409    | The student already has a `HELD` or `CONFIRMED` application for the class.                 |
+| `HOLD_EXPIRED`                 | 409    | The hold has expired or `expiresAt <= currentUtcTime`.                                     |
+| `HOLD_CANCELLED`               | 409    | The hold has already been cancelled.                                                       |
+| `CONFIRMED_HOLD_CANNOT_CANCEL` | 409    | A confirmed admission cannot be cancelled through this contract.                           |
 
 Unexpected failures remain 500 responses and must not expose implementation details.

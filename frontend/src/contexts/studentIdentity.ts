@@ -6,7 +6,7 @@ export interface StudentIdentityResult {
 
 export function validateStudentId(rawStudentId: string): StudentIdentityResult {
   const value = rawStudentId.trim();
-  return value
+  return /^\d{17}$/.test(value)
     ? { ok: true, value }
-    : { ok: false, error: "Enter a birth registration number to continue." };
+    : { ok: false, error: "Enter exactly 17 numeric digits for the birth registration number." };
 }

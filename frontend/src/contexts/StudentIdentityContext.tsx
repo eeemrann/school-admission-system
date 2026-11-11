@@ -44,7 +44,10 @@ export function StudentIdentityProvider({ children }: { children: ReactNode }) {
 function readStoredStudentId(): string | null {
   try {
     const value = window.localStorage.getItem(STORAGE_KEY)?.trim();
-    return value || null;
+    const result = validateStudentId(value ?? "");
+    if (result.ok && result.value) return result.value;
+    window.localStorage.removeItem(STORAGE_KEY);
+    return null;
   } catch {
     return null;
   }

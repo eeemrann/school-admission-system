@@ -30,14 +30,14 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 2);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-confirm");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560001");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
 
         using var response = await SendWithStudentAsync(
             client,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-confirm");
+            "20152691234560001");
         var confirmation = await response.Content.ReadFromJsonAsync<ConfirmationResponse>();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -56,19 +56,19 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 1);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-confirm-idempotent");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560002");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
 
         using var firstResponse = await SendWithStudentAsync(
             client,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-confirm-idempotent");
+            "20152691234560002");
         using var secondResponse = await SendWithStudentAsync(
             client,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-confirm-idempotent");
+            "20152691234560002");
 
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
         Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
@@ -87,14 +87,14 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 1);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-confirm-owner");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560003");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
 
         using var response = await SendWithStudentAsync(
             client,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-confirm-other");
+            "20152691234560004");
 
         await AssertProblemAsync(response, HttpStatusCode.Forbidden, "HOLD_OWNER_FORBIDDEN");
         var state = await ReadStateAsync(created.ClassId, created.HoldId);
@@ -108,14 +108,14 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 1);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-cancel-owner");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560005");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
 
         using var response = await SendWithStudentAsync(
             client,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-cancel-other");
+            "20152691234560006");
 
         await AssertProblemAsync(response, HttpStatusCode.Forbidden, "HOLD_OWNER_FORBIDDEN");
         var state = await ReadStateAsync(created.ClassId, created.HoldId);
@@ -131,7 +131,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             totalSeats: 1,
             heldSeats: 1,
             holdStatus: HoldStatus.Held,
-            studentId: "student-confirm-expired",
+            studentId: "20152691234560007",
             expiresIn: TimeSpan.FromMinutes(-1));
         using var client = CreateClient();
 
@@ -153,21 +153,21 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 1);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-confirm-cancelled");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560008");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
 
         using var cancelResponse = await SendWithStudentAsync(
             client,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-confirm-cancelled");
+            "20152691234560008");
         Assert.Equal(HttpStatusCode.NoContent, cancelResponse.StatusCode);
 
         using var response = await SendWithStudentAsync(
             client,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-confirm-cancelled");
+            "20152691234560008");
 
         await AssertProblemAsync(response, HttpStatusCode.Conflict, "HOLD_CANCELLED");
     }
@@ -177,14 +177,14 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 1);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-cancel");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560009");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
 
         using var response = await SendWithStudentAsync(
             client,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-cancel");
+            "20152691234560009");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var state = await ReadStateAsync(created.ClassId, created.HoldId);
@@ -196,7 +196,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             client,
             HttpMethod.Get,
             "/me/holds",
-            "student-cancel");
+            "20152691234560009");
         var history = await historyResponse.Content.ReadFromJsonAsync<HistoryResponse[]>();
 
         Assert.Equal(HttpStatusCode.OK, historyResponse.StatusCode);
@@ -210,19 +210,19 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 1);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-cancel-idempotent");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560010");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
 
         using var firstResponse = await SendWithStudentAsync(
             client,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-cancel-idempotent");
+            "20152691234560010");
         using var secondResponse = await SendWithStudentAsync(
             client,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-cancel-idempotent");
+            "20152691234560010");
 
         Assert.Equal(HttpStatusCode.NoContent, firstResponse.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, secondResponse.StatusCode);
@@ -236,20 +236,20 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 1);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-cancel-confirmed");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560011");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
         using var confirmResponse = await SendWithStudentAsync(
             client,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-cancel-confirmed");
+            "20152691234560011");
         Assert.Equal(HttpStatusCode.OK, confirmResponse.StatusCode);
 
         using var response = await SendWithStudentAsync(
             client,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-cancel-confirmed");
+            "20152691234560011");
 
         await AssertProblemAsync(response, HttpStatusCode.Conflict, "CONFIRMED_HOLD_CANNOT_CANCEL");
         var state = await ReadStateAsync(created.ClassId, created.HoldId);
@@ -264,7 +264,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             totalSeats: 1,
             heldSeats: 1,
             holdStatus: HoldStatus.Held,
-            studentId: "student-cancel-expired",
+            studentId: "20152691234560012",
             expiresIn: TimeSpan.FromMinutes(-1));
         using var client = CreateClient();
 
@@ -285,7 +285,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 1);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-header-required");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560013");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
 
         using var confirmResponse = await client.PostAsync(
@@ -308,7 +308,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             client,
             HttpMethod.Post,
             "/holds/not-a-hold/confirm",
-            "student-malformed-confirm");
+            "20152691234560014");
 
         await AssertProblemAsync(response, HttpStatusCode.BadRequest, "VALIDATION_ERROR");
     }
@@ -322,7 +322,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             client,
             HttpMethod.Post,
             $"/holds/h_{Guid.NewGuid():N}/confirm",
-            "student-unknown-confirm");
+            "20152691234560015");
 
         await AssertProblemAsync(response, HttpStatusCode.NotFound, "HOLD_NOT_FOUND");
     }
@@ -336,7 +336,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             client,
             HttpMethod.Delete,
             "/holds/not-a-hold",
-            "student-malformed-cancel");
+            "20152691234560016");
 
         await AssertProblemAsync(response, HttpStatusCode.BadRequest, "VALIDATION_ERROR");
     }
@@ -350,7 +350,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             client,
             HttpMethod.Delete,
             $"/holds/h_{Guid.NewGuid():N}",
-            "student-unknown-cancel");
+            "20152691234560017");
 
         await AssertProblemAsync(response, HttpStatusCode.NotFound, "HOLD_NOT_FOUND");
     }
@@ -364,7 +364,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             client,
             HttpMethod.Get,
             "/me/holds",
-            $"student-empty-history-{Guid.NewGuid():N}");
+            "20152691234560018");
         var history = await response.Content.ReadFromJsonAsync<JsonElement>();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -387,19 +387,19 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
         };
         var older = CreateSeededHold(
             classId,
-            "student-history-a",
+            "20152691234560019",
             HoldStatus.Cancelled,
             now.AddMinutes(-20),
             now.AddMinutes(-10));
         var newer = CreateSeededHold(
             classId,
-            "student-history-a",
+            "20152691234560019",
             HoldStatus.Expired,
             now.AddMinutes(-15),
             now.AddMinutes(-5));
         var otherStudent = CreateSeededHold(
             classId,
-            "student-history-b",
+            "20152691234560020",
             HoldStatus.Confirmed,
             now.AddMinutes(-10),
             now.AddMinutes(10));
@@ -417,7 +417,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             client,
             HttpMethod.Get,
             "/me/holds",
-            "  student-history-a  ");
+            "  20152691234560019  ");
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -446,7 +446,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
         using var createResponse = await CreateHoldAsync(
             setupClient,
             admissionClass.Id,
-            "student-concurrent-confirm");
+            "20152691234560021");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
         using var firstClient = CreateClient();
         using var secondClient = CreateClient();
@@ -455,12 +455,12 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             firstClient,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-concurrent-confirm");
+            "20152691234560021");
         var secondTask = SendWithStudentAsync(
             secondClient,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-concurrent-confirm");
+            "20152691234560021");
         await Task.WhenAll(firstTask, secondTask);
 
         using var firstResponse = await firstTask;
@@ -482,7 +482,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
         using var createResponse = await CreateHoldAsync(
             setupClient,
             admissionClass.Id,
-            "student-concurrent-cancel");
+            "20152691234560022");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
         using var firstClient = CreateClient();
         using var secondClient = CreateClient();
@@ -491,12 +491,12 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             firstClient,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-concurrent-cancel");
+            "20152691234560022");
         var secondTask = SendWithStudentAsync(
             secondClient,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-concurrent-cancel");
+            "20152691234560022");
         await Task.WhenAll(firstTask, secondTask);
 
         using var firstResponse = await firstTask;
@@ -518,7 +518,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
         using var createResponse = await CreateHoldAsync(
             setupClient,
             admissionClass.Id,
-            "student-confirm-cancel-race");
+            "20152691234560023");
         var created = await ReadRequiredAsync<CreatedHoldResponse>(createResponse);
         using var confirmClient = CreateClient();
         using var cancelClient = CreateClient();
@@ -527,12 +527,12 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             confirmClient,
             HttpMethod.Post,
             $"/holds/{created.HoldId}/confirm",
-            "student-confirm-cancel-race");
+            "20152691234560023");
         var cancellationTask = SendWithStudentAsync(
             cancelClient,
             HttpMethod.Delete,
             $"/holds/{created.HoldId}",
-            "student-confirm-cancel-race");
+            "20152691234560023");
         await Task.WhenAll(confirmationTask, cancellationTask);
 
         using var confirmationResponse = await confirmationTask;
@@ -564,7 +564,7 @@ public sealed class AdmissionLifecycleEndpointsTests : IDisposable
             totalSeats: 1,
             heldSeats: 0,
             holdStatus: HoldStatus.Held,
-            studentId: "student-rollback",
+            studentId: "20152691234560024",
             expiresIn: TimeSpan.FromMinutes(-1));
         using var client = CreateClient();
 

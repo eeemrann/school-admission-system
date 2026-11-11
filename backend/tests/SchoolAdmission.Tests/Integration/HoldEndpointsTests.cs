@@ -30,14 +30,14 @@ public sealed class HoldEndpointsTests : IDisposable
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 3);
 
-        using var response = await CreateHoldAsync(client, admissionClass.Id, "student-1");
+        using var response = await CreateHoldAsync(client, admissionClass.Id, "20152691234560025");
         var hold = await response.Content.ReadFromJsonAsync<CreatedHoldResponse>();
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.NotNull(hold);
         Assert.StartsWith("h_", hold.HoldId, StringComparison.Ordinal);
         Assert.Equal(admissionClass.Id, hold.ClassId);
-        Assert.Equal("student-1", hold.StudentId);
+        Assert.Equal("20152691234560025", hold.StudentId);
         Assert.Equal("HELD", hold.Status);
         Assert.InRange(
             hold.ExpiresAt,
@@ -51,11 +51,11 @@ public sealed class HoldEndpointsTests : IDisposable
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 2);
 
-        using var response = await CreateHoldAsync(client, admissionClass.Id, "  student-trimmed  ");
+        using var response = await CreateHoldAsync(client, admissionClass.Id, "  20152691234560026  ");
         var hold = await response.Content.ReadFromJsonAsync<CreatedHoldResponse>();
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("student-trimmed", hold?.StudentId);
+        Assert.Equal("20152691234560026", hold?.StudentId);
     }
 
     [Fact]
@@ -74,7 +74,10 @@ public sealed class HoldEndpointsTests : IDisposable
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task RejectsBlankStudentId(string studentId)
+    [InlineData("2015269123456002")]
+    [InlineData("201526912345600200")]
+    [InlineData("2015269123456002A")]
+    public async Task RejectsInvalidStudentId(string studentId)
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 2);
@@ -94,7 +97,7 @@ public sealed class HoldEndpointsTests : IDisposable
     {
         using var client = CreateClient();
 
-        using var response = await CreateHoldAsync(client, "not-a-class", "student-malformed");
+        using var response = await CreateHoldAsync(client, "not-a-class", "20152691234560027");
 
         await AssertProblemAsync(response, HttpStatusCode.BadRequest, "VALIDATION_ERROR");
     }
@@ -107,7 +110,7 @@ public sealed class HoldEndpointsTests : IDisposable
         using var response = await CreateHoldAsync(
             client,
             $"c_{Guid.NewGuid():N}",
-            "student-unknown-class");
+            "20152691234560028");
 
         await AssertProblemAsync(response, HttpStatusCode.NotFound, "CLASS_NOT_FOUND");
     }
@@ -120,9 +123,9 @@ public sealed class HoldEndpointsTests : IDisposable
             totalSeats: 1,
             heldSeats: 1,
             holdStatus: HoldStatus.Held,
-            studentId: "student-existing");
+            studentId: "20152691234560029");
 
-        using var response = await CreateHoldAsync(client, seeded.ClassId, "student-new");
+        using var response = await CreateHoldAsync(client, seeded.ClassId, "20152691234560030");
 
         await AssertProblemAsync(response, HttpStatusCode.Conflict, "NO_SEATS_AVAILABLE");
         await using var dbContext = fixture.CreateDbContext();
@@ -141,8 +144,8 @@ public sealed class HoldEndpointsTests : IDisposable
         using var firstClient = CreateClient();
         using var secondClient = CreateClient();
 
-        var firstTask = CreateHoldAsync(firstClient, admissionClass.Id, "student-concurrent-1");
-        var secondTask = CreateHoldAsync(secondClient, admissionClass.Id, "student-concurrent-2");
+        var firstTask = CreateHoldAsync(firstClient, admissionClass.Id, "20152691234560031");
+        var secondTask = CreateHoldAsync(secondClient, admissionClass.Id, "20152691234560032");
         await Task.WhenAll(firstTask, secondTask);
 
         using var firstResponse = await firstTask;
@@ -171,10 +174,10 @@ public sealed class HoldEndpointsTests : IDisposable
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 2);
 
-        using var firstResponse = await CreateHoldAsync(client, admissionClass.Id, "student-duplicate");
+        using var firstResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560033");
         Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
 
-        using var duplicateResponse = await CreateHoldAsync(client, admissionClass.Id, "student-duplicate");
+        using var duplicateResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560033");
 
         await AssertProblemAsync(
             duplicateResponse,
@@ -190,10 +193,10 @@ public sealed class HoldEndpointsTests : IDisposable
             heldSeats: 0,
             confirmedSeats: 1,
             holdStatus: HoldStatus.Confirmed,
-            studentId: "student-confirmed");
+            studentId: "20152691234560034");
         using var client = CreateClient();
 
-        using var response = await CreateHoldAsync(client, seeded.ClassId, "student-confirmed");
+        using var response = await CreateHoldAsync(client, seeded.ClassId, "20152691234560034");
 
         await AssertProblemAsync(
             response,
@@ -205,7 +208,7 @@ public sealed class HoldEndpointsTests : IDisposable
     public async Task UnrelatedUniqueViolationReturnsInternalError()
     {
         const string indexName = "ux_test_unrelated_student_http_constraint";
-        const string studentId = "student-unrelated-http-index";
+        const string studentId = "20152691234560035";
 
         await using var setupContext = fixture.CreateDbContext();
         await setupContext.Database.ExecuteSqlRawAsync(
@@ -241,7 +244,7 @@ public sealed class HoldEndpointsTests : IDisposable
             totalSeats: 1,
             heldSeats: 0,
             holdStatus: HoldStatus.Expired,
-            studentId: "student-reapply-expired");
+            studentId: "20152691234560036");
         using var client = CreateClient();
 
         using var response = await CreateHoldAsync(client, seeded.ClassId, seeded.StudentId);
@@ -256,7 +259,7 @@ public sealed class HoldEndpointsTests : IDisposable
             totalSeats: 1,
             heldSeats: 0,
             holdStatus: HoldStatus.Cancelled,
-            studentId: "student-reapply-cancelled");
+            studentId: "20152691234560037");
         using var client = CreateClient();
 
         using var response = await CreateHoldAsync(client, seeded.ClassId, seeded.StudentId);
@@ -271,11 +274,11 @@ public sealed class HoldEndpointsTests : IDisposable
             totalSeats: 1,
             heldSeats: 1,
             holdStatus: HoldStatus.Held,
-            studentId: "student-expiring",
+            studentId: "20152691234560038",
             expiresIn: TimeSpan.FromMinutes(-1));
         using var client = CreateClient();
 
-        using var response = await CreateHoldAsync(client, seeded.ClassId, "student-after-expiry");
+        using var response = await CreateHoldAsync(client, seeded.ClassId, "20152691234560039");
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         await using var dbContext = fixture.CreateDbContext();
@@ -294,7 +297,7 @@ public sealed class HoldEndpointsTests : IDisposable
             totalSeats: 1,
             heldSeats: 1,
             holdStatus: HoldStatus.Held,
-            studentId: "student-reconcile-once",
+            studentId: "20152691234560040",
             expiresIn: TimeSpan.FromMinutes(-1));
         using var client = CreateClient();
 
@@ -318,7 +321,7 @@ public sealed class HoldEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 2);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-get");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560041");
         var created = await createResponse.Content.ReadFromJsonAsync<CreatedHoldResponse>();
 
         using var response = await client.GetAsync($"/holds/{created!.HoldId}");
@@ -356,7 +359,7 @@ public sealed class HoldEndpointsTests : IDisposable
     {
         using var client = CreateClient();
         var admissionClass = await CreateClassAsync(client, 2);
-        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "student-persisted");
+        using var createResponse = await CreateHoldAsync(client, admissionClass.Id, "20152691234560042");
         var created = await createResponse.Content.ReadFromJsonAsync<CreatedHoldResponse>();
         var holdId = Guid.ParseExact(created!.HoldId[2..], "N");
 
@@ -365,7 +368,7 @@ public sealed class HoldEndpointsTests : IDisposable
             .AsNoTracking()
             .SingleAsync(hold => hold.Id == holdId);
 
-        Assert.Equal("student-persisted", persistedHold.StudentId);
+        Assert.Equal("20152691234560042", persistedHold.StudentId);
         Assert.Equal(HoldStatus.Held, persistedHold.Status);
         Assert.Equal(admissionClass.ClassIdGuid, persistedHold.ClassId);
     }

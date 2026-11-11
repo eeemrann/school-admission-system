@@ -31,7 +31,7 @@ describe("StudentApplicationsPage", () => {
           ]),
         ),
     );
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
     expect(await screen.findAllByText("Class 7 - Day Shift")).toHaveLength(4);
     expect(screen.getAllByText("HELD")).toHaveLength(1);
@@ -49,7 +49,7 @@ describe("StudentApplicationsPage", () => {
       .mockResolvedValueOnce(jsonResponse({ holdId: heldApplication.holdId, status: "CONFIRMED" }))
       .mockResolvedValueOnce(jsonResponse([{ ...heldApplication, status: "CONFIRMED" }]));
     vi.stubGlobal("fetch", fetchMock);
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
     fireEvent.click(await screen.findByRole("button", { name: /confirm admission/i }));
     const dialog = await screen.findByRole("dialog", { name: /confirm admission/i });
@@ -59,7 +59,7 @@ describe("StudentApplicationsPage", () => {
     await waitFor(() => expect(screen.getByText("CONFIRMED")).toBeInTheDocument());
     const confirmRequest = fetchMock.mock.calls[1] as [string, RequestInit];
     expect(confirmRequest[0]).toBe(`http://localhost:8080/holds/${heldApplication.holdId}/confirm`);
-    expect(new Headers(confirmRequest[1].headers).get("X-Student-Id")).toBe("student-a");
+    expect(new Headers(confirmRequest[1].headers).get("X-Student-Id")).toBe("20152691234560049");
   });
 
   it("cancels a held application and keeps the history row", async () => {
@@ -69,7 +69,7 @@ describe("StudentApplicationsPage", () => {
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
       .mockResolvedValueOnce(jsonResponse([{ ...heldApplication, status: "CANCELLED" }]));
     vi.stubGlobal("fetch", fetchMock);
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
     fireEvent.click(await screen.findByRole("button", { name: /cancel reservation/i }));
     const dialog = await screen.findByRole("dialog", { name: /cancel reservation/i });
@@ -91,7 +91,7 @@ describe("StudentApplicationsPage", () => {
       )
       .mockResolvedValueOnce(jsonResponse([{ ...heldApplication, status: "EXPIRED" }]));
     vi.stubGlobal("fetch", fetchMock);
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
     fireEvent.click(await screen.findByRole("button", { name: /confirm admission/i }));
     const dialog = await screen.findByRole("dialog", { name: /confirm admission/i });
@@ -107,22 +107,22 @@ describe("StudentApplicationsPage", () => {
       .mockResolvedValueOnce(jsonResponse([{ ...heldApplication, className: "Student A class" }]))
       .mockResolvedValueOnce(jsonResponse([{ ...heldApplication, className: "Student B class" }]));
     vi.stubGlobal("fetch", fetchMock);
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
     expect(await screen.findByText("Student A class")).toBeInTheDocument();
     const identityInput = screen.getByLabelText("Birth Registration Number");
-    fireEvent.change(identityInput, { target: { value: "student-b" } });
+    fireEvent.change(identityInput, { target: { value: "20152691234560050" } });
     fireEvent.click(screen.getByRole("button", { name: "Change number" }));
 
     expect(await screen.findByText("Student B class")).toBeInTheDocument();
     expect(screen.queryByText("Student A class")).not.toBeInTheDocument();
     const historyRequest = fetchMock.mock.calls[1] as [string, RequestInit];
-    expect(new Headers(historyRequest[1].headers).get("X-Student-Id")).toBe("student-b");
+    expect(new Headers(historyRequest[1].headers).get("X-Student-Id")).toBe("20152691234560050");
   });
 
   it("shows an empty state for a student with no history", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-empty" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560051" });
 
     expect(await screen.findByText("No applications yet")).toBeInTheDocument();
   });
@@ -136,7 +136,7 @@ describe("StudentApplicationsPage", () => {
           problemResponse("INTERNAL_ERROR", "The history service is unavailable.", 500),
         ),
     );
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The history service is unavailable.",
@@ -156,7 +156,7 @@ describe("StudentApplicationsPage", () => {
       )
       .mockResolvedValueOnce(jsonResponse([{ ...heldApplication, status: "CONFIRMED" }]));
     vi.stubGlobal("fetch", fetchMock);
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
     fireEvent.click(await screen.findByRole("button", { name: /cancel reservation/i }));
     const dialog = await screen.findByRole("dialog", { name: /cancel reservation/i });
@@ -184,7 +184,7 @@ describe("StudentApplicationsPage", () => {
       .mockResolvedValueOnce(jsonResponse([countdownApplication]))
       .mockReturnValueOnce(authoritativeHold);
     vi.stubGlobal("fetch", fetchMock);
-    renderWithProviders(<StudentApplicationsPage />, { studentId: "student-a" });
+    renderWithProviders(<StudentApplicationsPage />, { studentId: "20152691234560049" });
 
     await vi.waitFor(() => expect(screen.getByText("00:01")).toBeInTheDocument());
     await act(async () => {

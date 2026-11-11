@@ -9,6 +9,7 @@ export function useClassesQuery() {
   return useQuery({
     queryKey: classesQueryKey,
     queryFn: ({ signal }) => getApiClient().listClasses(signal),
+    refetchInterval: 5_000,
   });
 }
 

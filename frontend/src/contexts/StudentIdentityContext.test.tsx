@@ -20,26 +20,31 @@ function IdentityProbe() {
   return (
     <div>
       <output>{studentId ?? "none"}</output>
-      <button onClick={() => setStudentId("  student-42  ")}>Set ID</button>
+      <button onClick={() => setStudentId("  20152691234560048  ")}>Set ID</button>
     </div>
   );
 }
 
 describe("student identity", () => {
-  it("trims valid identifiers and rejects blank values", () => {
-    expect(validateStudentId("  student-42 ")).toEqual({ ok: true, value: "student-42" });
+  it("trims valid 17-digit identifiers and rejects invalid values", () => {
+    expect(validateStudentId("  20152691234560048 ")).toEqual({
+      ok: true,
+      value: "20152691234560048",
+    });
     expect(validateStudentId("   ").ok).toBe(false);
+    expect(validateStudentId("2015269123456004").ok).toBe(false);
+    expect(validateStudentId("2015269123456004A").ok).toBe(false);
   });
 
   it("persists a selected identifier for the next browser render", () => {
     const firstRender = renderIdentityProbe();
 
     fireEvent.click(screen.getByRole("button", { name: "Set ID" }));
-    expect(screen.getByText("student-42")).toBeInTheDocument();
+    expect(screen.getByText("20152691234560048")).toBeInTheDocument();
     firstRender.unmount();
 
     renderIdentityProbe();
 
-    expect(screen.getByText("student-42")).toBeInTheDocument();
+    expect(screen.getByText("20152691234560048")).toBeInTheDocument();
   });
 });

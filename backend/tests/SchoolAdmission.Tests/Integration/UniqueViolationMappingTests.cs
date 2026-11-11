@@ -33,7 +33,7 @@ public sealed class UniqueViolationMappingTests(PostgresFixture fixture)
     public async Task RequiresTheExactActiveApplicationConstraintName()
     {
         const string indexName = "ux_test_unrelated_student_constraint";
-        const string studentId = "student-unrelated-index";
+        const string studentId = "20152691234560047";
 
         await using var setupContext = fixture.CreateDbContext();
         await setupContext.Database.ExecuteSqlRawAsync(

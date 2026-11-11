@@ -28,7 +28,7 @@ public sealed class HoldStressTests(PostgresFixture fixture)
             .Select(studentNumber => SubmitHoldAsync(
                 client,
                 admissionClass!.Id,
-                $"stress-student-{studentNumber}",
+                $"20152691234{studentNumber:D6}",
                 startGate.Task))
             .ToArray();
 

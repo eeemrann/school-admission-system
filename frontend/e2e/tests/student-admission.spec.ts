@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { apiBaseUrl, createClass, getClass, getHold, selectStudent, uniqueValue } from "../support";
+import {
+  apiBaseUrl,
+  createClass,
+  getClass,
+  getHold,
+  selectStudent,
+  uniqueStudentId,
+  uniqueValue,
+} from "../support";
 
 test.describe("student admission workflow", () => {
   test("shows a loading state while the real class request is pending", async ({
@@ -31,7 +39,7 @@ test.describe("student admission workflow", () => {
     request,
   }) => {
     const className = uniqueValue("E2E Confirm Class");
-    const studentId = uniqueValue("student-confirm");
+    const studentId = uniqueStudentId();
     const admissionClass = await createClass(request, className, 2);
 
     await page.goto("/student/classes");
@@ -75,7 +83,7 @@ test.describe("student admission workflow", () => {
 
   test("cancels a reservation and releases the seat", async ({ page, request }) => {
     const className = uniqueValue("E2E Cancel Class");
-    const studentId = uniqueValue("student-cancel");
+    const studentId = uniqueStudentId();
     const admissionClass = await createClass(request, className, 1);
 
     await page.goto("/student/classes");
@@ -109,8 +117,8 @@ test.describe("student admission workflow", () => {
     request,
   }) => {
     const className = uniqueValue("E2E Conflict Class");
-    const studentA = uniqueValue("student-duplicate");
-    const studentB = uniqueValue("student-no-seat");
+    const studentA = uniqueStudentId();
+    const studentB = uniqueStudentId();
     const admissionClass = await createClass(request, className, 2);
 
     await page.goto("/student/classes");
@@ -128,7 +136,7 @@ test.describe("student admission workflow", () => {
     expect(secondHold.status()).toBe(201);
 
     const noSeatResponse = await request.post(`${apiBaseUrl}/classes/${admissionClass.id}/holds`, {
-      headers: { "X-Student-Id": uniqueValue("student-full") },
+      headers: { "X-Student-Id": uniqueStudentId() },
     });
     expect(noSeatResponse.status()).toBe(409);
     expect((await noSeatResponse.json()).code).toBe("NO_SEATS_AVAILABLE");
@@ -140,8 +148,8 @@ test.describe("student admission workflow", () => {
     request,
   }) => {
     const className = uniqueValue("E2E Browser Full Class");
-    const studentA = uniqueValue("student-browser-full-a");
-    const studentB = uniqueValue("student-browser-full-b");
+    const studentA = uniqueStudentId();
+    const studentB = uniqueStudentId();
     const admissionClass = await createClass(request, className, 1);
     const secondContext = await browser.newContext();
     const secondPage = await secondContext.newPage();
@@ -180,8 +188,8 @@ test.describe("student admission workflow", () => {
     request,
   }) => {
     const className = uniqueValue("E2E Expiry Class");
-    const studentA = uniqueValue("student-expiry-a");
-    const studentB = uniqueValue("student-expiry-b");
+    const studentA = uniqueStudentId();
+    const studentB = uniqueStudentId();
     const admissionClass = await createClass(request, className, 1);
 
     await page.goto("/student/classes");
@@ -226,7 +234,7 @@ test.describe("student admission workflow", () => {
     request,
   }) => {
     const className = uniqueValue("E2E Countdown Class");
-    const studentId = uniqueValue("student-countdown");
+    const studentId = uniqueStudentId();
     await createClass(request, className, 1);
 
     await page.goto("/student/classes");

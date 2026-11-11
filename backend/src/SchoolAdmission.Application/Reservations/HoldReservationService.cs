@@ -21,16 +21,13 @@ public sealed class HoldReservationService(
                 ValidationError("Class ID must use the c_ prefix followed by a valid UUID."));
         }
 
-        if (string.IsNullOrWhiteSpace(studentId))
+        if (!TryNormalizeStudentId(studentId, out var normalizedStudentId))
         {
             return new HoldOperationResult<HoldResponse>(
                 null,
-                new HoldManagementError(
-                    HoldManagementErrorCode.StudentIdRequired,
-                    "X-Student-Id is required and cannot be blank."));
+                StudentIdRequiredError());
         }
 
-        var normalizedStudentId = studentId.Trim();
         var result = await repository.CreateHeldAsync(
             classId,
             normalizedStudentId,
@@ -228,13 +225,14 @@ public sealed class HoldReservationService(
     private static bool TryNormalizeStudentId(string? studentId, out string normalizedStudentId)
     {
         normalizedStudentId = studentId?.Trim() ?? string.Empty;
-        return !string.IsNullOrWhiteSpace(normalizedStudentId);
+        return normalizedStudentId.Length == 17
+            && normalizedStudentId.All(static character => character is >= '0' and <= '9');
     }
 
     private static HoldManagementError StudentIdRequiredError() =>
         new(
             HoldManagementErrorCode.StudentIdRequired,
-            "X-Student-Id is required and cannot be blank.");
+            "X-Student-Id must contain exactly 17 numeric digits.");
 
     private static HoldManagementError ValidationError(string detail) =>
         new(HoldManagementErrorCode.ValidationError, detail);

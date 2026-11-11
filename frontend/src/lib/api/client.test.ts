@@ -24,7 +24,7 @@ describe("typed API client", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const client = new ApiClient({ baseUrl: "http://localhost:8080/" });
-    const classes = await client.listMyHolds("student-42");
+    const classes = await client.listMyHolds("20152691234560048");
 
     expect(classes).toHaveLength(1);
     expect(fetchMock).toHaveBeenCalledWith(
@@ -35,7 +35,7 @@ describe("typed API client", () => {
       }),
     );
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(new Headers(request.headers).get("X-Student-Id")).toBe("student-42");
+    expect(new Headers(request.headers).get("X-Student-Id")).toBe("20152691234560048");
   });
 
   it("parses RFC 7807 problem details into a typed error", async () => {

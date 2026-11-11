@@ -12,7 +12,7 @@ The system is a professional school admission workflow for administrators, stude
 
 ## Architecture
 
-The repository will contain three application runtime services and one one-shot deployment service:
+The repository contains three application runtime services and one one-shot deployment service:
 
 1. PostgreSQL, with a named Docker volume for application data.
 2. An ASP.NET Core API at `http://localhost:8080`.
@@ -78,7 +78,7 @@ cp .env.example .env
 Start the complete application from the repository root:
 
 ```bash
-docker compose up --build
+docker compose up
 ```
 
 The API is available at `http://localhost:8080`, and the frontend is available at `http://localhost:5173`. Both ports can be changed with `API_HOST_PORT` and `FRONTEND_HOST_PORT` in `.env`.
@@ -101,7 +101,7 @@ npm install --prefix frontend
 npm run dev --prefix frontend
 ```
 
-The browser talks to `VITE_API_BASE_URL` (default placeholder `http://localhost:8080`) and never connects to PostgreSQL. The selected `X-Student-Id` value is stored in browser local storage for convenience only; it is not authentication or proof of identity. The student portal supports the complete browse, hold, countdown, confirm, cancel, and history workflow through the existing contract. The administrator portal provides API-backed class metrics, searchable class management, class creation, and read-only class details. Administrator routes are intentionally unauthenticated because no administrator authentication contract exists. The backend remains authoritative for capacity, ownership, status, and expiry.
+The browser talks to `VITE_API_BASE_URL` (default placeholder `http://localhost:8080`) and never connects to PostgreSQL. The student portal requires exactly 17 numeric birth-registration digits and sends the trimmed value as `X-Student-Id`; the value is stored in browser local storage for convenience only and is not authentication or proof of identity. Class availability refreshes automatically every five seconds, while the backend remains authoritative for capacity, ownership, status, and expiry. The student portal supports the complete browse, hold, countdown, confirm, cancel, and history workflow through the existing contract. The administrator portal provides API-backed class metrics, searchable class management, class creation, and read-only class details. Administrator routes are intentionally unauthenticated because no administrator authentication contract exists.
 
 ## Verification
 
@@ -120,7 +120,7 @@ npm run test --prefix frontend -- --run
 docker build -f frontend/Dockerfile -t school-admission-frontend:local .
 ```
 
-The current backend test project includes 100 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, concurrency, direct migrator, and executable-process migration tests. The frontend has 50 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
+The current backend test project includes 103 passing PostgreSQL-backed persistence, HTTP integration, expiry-worker, lifecycle, concurrency, direct migrator, and executable-process migration tests. The frontend has 51 passing Vitest/React Testing Library tests, plus an opt-in Playwright suite that runs the browser against a disposable PostgreSQL 18 database and the real API. An opt-in stress test is documented below.
 
 ## End-to-end testing
 
@@ -172,7 +172,7 @@ AI_USAGE.md               AI-assisted development record
 | EF Core migration service/image                               | Complete; Compose runs it before the API                                                                                                                          |
 | Frontend Docker image                                         | Complete; Compose serves it on the documented frontend port                                                                                                       |
 | Docker Compose application                                    | Complete local stack with separate persistent volume; runtime verification reported below                                                                         |
-| Automated tests                                               | 100 backend tests pass, including migrator tests; the opt-in 1,000-request stress test also passes; frontend has 50 Vitest/RTL tests plus Playwright E2E coverage |
+| Automated tests                                               | 103 backend tests pass, including migrator tests; the opt-in 1,000-request stress test also passes; frontend has 51 Vitest/RTL tests plus Playwright E2E coverage |
 | CI/CD workflows                                               | Not started                                                                                                                                                       |
 
 The application is runnable through Docker Compose after the documented checks pass. CI/CD and public deployment remain outside this submission.
