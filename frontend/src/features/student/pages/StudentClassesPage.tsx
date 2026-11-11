@@ -227,7 +227,6 @@ function ClassCard({
             <h3 className="mt-2 text-xl font-bold leading-tight text-slate-950">
               {admissionClass.name}
             </h3>
-            <p className="mt-2 break-all text-xs text-slate-500">Class ID · {admissionClass.id}</p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
             <span className="grid size-10 place-items-center rounded-xl bg-brand-indigo-soft text-brand-indigo">

@@ -25,6 +25,7 @@ describe("AdminLayout", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/admin");
     expect(screen.getByRole("link", { name: "Classes" })).toHaveAttribute("href", "/admin/classes");
+    expect(screen.getByRole("link", { name: "Student portal" })).toHaveAttribute("href", "/");
     expect(screen.getByText("Classes content")).toBeInTheDocument();
     expect(screen.getByText("Administration")).toBeInTheDocument();
 

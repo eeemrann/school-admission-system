@@ -2,6 +2,7 @@ import { ArrowUpRight, BookOpen, CheckCircle2, Clock3, Users } from "lucide-reac
 import { Link } from "react-router-dom";
 import { Badge } from "../../../components/ui/Badge";
 import { Card } from "../../../components/ui/Card";
+import { CompactId } from "../../../components/ui/CompactId";
 import type { ClassSummary } from "../../../types/api";
 import { getClassUtilizationPercent } from "../metrics";
 import { CapacityBar } from "./CapacityBar";
@@ -44,7 +45,9 @@ function ClassRegisterCard({ admissionClass }: { admissionClass: ClassSummary })
           </span>
           <div className="min-w-0">
             <h4 className="break-words font-bold text-slate-950">{admissionClass.name}</h4>
-            <p className="mt-1 break-all font-mono text-xs text-slate-500">{admissionClass.id}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              <CompactId label="class ID" value={admissionClass.id} />
+            </p>
           </div>
         </div>
         <Badge

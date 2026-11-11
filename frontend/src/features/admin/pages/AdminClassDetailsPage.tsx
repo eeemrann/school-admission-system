@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
+import { CompactId } from "../../../components/ui/CompactId";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { LoadingIndicator } from "../../../components/ui/LoadingIndicator";
@@ -83,7 +84,10 @@ function ClassDetails({ admissionClass }: { admissionClass: ClassSummary }) {
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
                 {admissionClass.name}
               </h2>
-              <p className="mt-2 font-mono text-xs text-slate-600">{admissionClass.id}</p>
+              <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                <span className="font-semibold uppercase tracking-wide">Class ID</span>
+                <CompactId label="class ID" value={admissionClass.id} />
+              </div>
             </div>
           </div>
           <div className="relative flex shrink-0 flex-col items-start gap-2 rounded-2xl border border-white/80 bg-white/85 p-4 shadow-sm sm:items-end">

@@ -1,6 +1,7 @@
 import {
   BookOpen,
   ChevronRight,
+  Globe2,
   GraduationCap,
   LayoutDashboard,
   Menu,
@@ -138,6 +139,23 @@ export function AdminLayout() {
               {item.label}
             </NavLink>
           ))}
+          <p className="px-3 pb-3 pt-8 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+            Switch workspace
+          </p>
+          <NavLink
+            className={({ isActive }) =>
+              `group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-colors ${isActive ? "bg-indigo-500/20 text-white shadow-[inset_3px_0_0_#a5b4fc]" : "text-slate-400 hover:bg-white/10 hover:text-white"}`
+            }
+            end
+            tabIndex={sidebarInteractive ? undefined : -1}
+            to="/"
+          >
+            <Globe2
+              aria-hidden="true"
+              className="size-5 transition-transform group-hover:scale-105"
+            />
+            Student portal
+          </NavLink>
         </nav>
         <div className="m-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-5 text-slate-300">
           <ShieldAlert aria-hidden="true" className="mb-2 size-4 text-amber-300" />
