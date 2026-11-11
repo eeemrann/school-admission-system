@@ -71,6 +71,7 @@ export function CreateClassDialog({ open, onClose, onCreated }: CreateClassDialo
           }}
           placeholder="Class 6 - Morning Shift"
           aria-required="true"
+          hint="Use a name that is clear to students and families."
           value={name}
         />
         <Input
@@ -82,6 +83,7 @@ export function CreateClassDialog({ open, onClose, onCreated }: CreateClassDialo
             if (formError) setFormError(undefined);
           }}
           placeholder="120"
+          hint="Capacity is protected by the API and cannot be exceeded by concurrent applications."
           aria-required="true"
           step="1"
           type="number"

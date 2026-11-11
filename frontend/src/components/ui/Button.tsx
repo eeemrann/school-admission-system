@@ -26,7 +26,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   return (
     <button
       ref={ref}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold shadow-sm transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-indigo disabled:cursor-not-allowed disabled:opacity-55 ${buttonVariants[variant]} ${buttonSizes[size]} ${className}`}
+      aria-busy={isLoading || undefined}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold shadow-sm transition duration-150 ease-out hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-indigo disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0 ${buttonVariants[variant]} ${buttonSizes[size]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >
@@ -37,7 +38,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 });
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: "bg-brand-indigo text-white hover:bg-indigo-800 focus-visible:outline-brand-indigo",
+  primary:
+    "bg-brand-indigo text-white shadow-[0_8px_18px_rgba(79,70,229,0.2)] hover:bg-indigo-700 focus-visible:outline-brand-indigo",
   secondary:
     "border border-brand-border bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-slate-600",
   ghost: "text-slate-700 hover:bg-slate-100 focus-visible:outline-slate-600",

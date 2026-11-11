@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, RefreshCw, Search, Users } from "lucide-react";
+import { BookOpenCheck, CheckCircle2, Plus, RefreshCw, Search, Users } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { EmptyState } from "../../../components/ui/EmptyState";
@@ -8,27 +8,32 @@ import { InlineNotice } from "../../../components/ui/InlineNotice";
 import { Input } from "../../../components/ui/Input";
 import { LoadingIndicator } from "../../../components/ui/LoadingIndicator";
 import { PageHeader } from "../../../components/ui/PageHeader";
+import type { ClassSummary } from "../../../types/api";
 import { AdminClassTable } from "../components/AdminClassTable";
 import { CreateClassDialog } from "../components/CreateClassDialog";
+import { deriveAdminMetrics } from "../metrics";
 import { useAdminClassesQuery } from "../queries";
 
 export function AdminClassesPage() {
   const classesQuery = useAdminClassesQuery();
   const [searchTerm, setSearchTerm] = useState("");
+  const [availabilityFilter, setAvailabilityFilter] = useState<"all" | "available" | "full">("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createdNotice, setCreatedNotice] = useState(false);
 
   const filteredClasses = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
 
-    if (!normalizedSearch) {
-      return classesQuery.data ?? [];
-    }
-
-    return (classesQuery.data ?? []).filter((admissionClass) =>
-      admissionClass.name.toLocaleLowerCase().includes(normalizedSearch),
-    );
-  }, [classesQuery.data, searchTerm]);
+    return (classesQuery.data ?? []).filter((admissionClass) => {
+      const matchesSearch =
+        !normalizedSearch || admissionClass.name.toLocaleLowerCase().includes(normalizedSearch);
+      const matchesAvailability =
+        availabilityFilter === "all" ||
+        (availabilityFilter === "available" && admissionClass.availableSeats > 0) ||
+        (availabilityFilter === "full" && admissionClass.availableSeats <= 0);
+      return matchesSearch && matchesAvailability;
+    });
+  }, [availabilityFilter, classesQuery.data, searchTerm]);
 
   return (
     <div className="space-y-8">
@@ -59,6 +64,7 @@ export function AdminClassesPage() {
           </div>
         }
       />
+      {classesQuery.isSuccess ? <ClassManagementSummary classes={classesQuery.data} /> : null}
       {createdNotice ? (
         <InlineNotice tone="success">Class created and the class list was refreshed.</InlineNotice>
       ) : null}
@@ -79,14 +85,31 @@ export function AdminClassesPage() {
             </p>
           </div>
           {classesQuery.isSuccess && classesQuery.data.length > 0 ? (
-            <div className="w-full sm:w-80">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
               <Input
                 aria-label="Search classes by name"
+                className="min-w-64"
                 label="Search classes"
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search by name"
                 value={searchTerm}
               />
+              <label className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-border bg-white px-3 text-xs font-bold text-slate-600">
+                <span className="sr-only">Filter class availability</span>
+                <span>Show</span>
+                <select
+                  aria-label="Filter class availability"
+                  className="bg-transparent font-bold text-slate-800 outline-none"
+                  onChange={(event) =>
+                    setAvailabilityFilter(event.target.value as "all" | "available" | "full")
+                  }
+                  value={availabilityFilter}
+                >
+                  <option value="all">All</option>
+                  <option value="available">With seats</option>
+                  <option value="full">Full only</option>
+                </select>
+              </label>
             </div>
           ) : null}
         </div>
@@ -122,6 +145,49 @@ export function AdminClassesPage() {
         onCreated={() => setCreatedNotice(true)}
         open={dialogOpen}
       />
+    </div>
+  );
+}
+
+function ClassManagementSummary({ classes }: { classes: readonly ClassSummary[] }) {
+  const metrics = deriveAdminMetrics(classes);
+
+  return (
+    <section aria-label="Class register summary" className="grid gap-3 sm:grid-cols-3">
+      <SummaryStat icon={BookOpenCheck} label="Published classes" value={metrics.totalClasses} />
+      <SummaryStat icon={Users} label="Total capacity" value={metrics.totalCapacity} />
+      <SummaryStat
+        icon={CheckCircle2}
+        label="Seats available"
+        value={metrics.totalAvailableSeats}
+        tone="success"
+      />
+    </section>
+  );
+}
+
+function SummaryStat({
+  icon: Icon,
+  label,
+  tone = "neutral",
+  value,
+}: {
+  icon: typeof Users;
+  label: string;
+  tone?: "neutral" | "success";
+  value: number;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 ${tone === "success" ? "border-emerald-200/80 bg-emerald-50/70 text-emerald-700" : "border-brand-border bg-white text-brand-indigo"}`}
+    >
+      <span className="grid size-9 place-items-center rounded-xl bg-white/80 shadow-sm">
+        <Icon aria-hidden="true" className="size-4" />
+      </span>
+      <div>
+        <p className="text-xl font-extrabold tracking-tight">{value}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">{label}</p>
+      </div>
     </div>
   );
 }

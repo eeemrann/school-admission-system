@@ -21,14 +21,17 @@ export function StudentIdentitySelector() {
   }
 
   return (
-    <Card className="overflow-hidden border-indigo-100 bg-white" tone="soft">
-      <div className="-mx-5 -mt-5 mb-5 flex items-start gap-3 border-b border-indigo-100 bg-brand-indigo-soft/60 px-5 py-4 sm:-mx-6 sm:-mt-6 sm:px-6">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-brand-indigo shadow-sm">
+    <Card className="relative overflow-hidden border-indigo-100/80 bg-white" tone="soft">
+      <div className="pointer-events-none absolute right-0 top-0 size-40 rounded-full bg-indigo-100/50 blur-3xl" />
+      <div className="relative -mx-5 -mt-5 mb-5 flex items-start gap-3 border-b border-indigo-100 bg-brand-indigo-soft/55 px-5 py-4 sm:-mx-6 sm:-mt-6 sm:px-6">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-white text-brand-indigo shadow-sm">
           <Fingerprint aria-hidden="true" className="size-5" />
         </span>
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-bold text-slate-950">Choose your student identity</h2>
+            <h2 className="font-extrabold tracking-tight text-slate-950">
+              Choose your student identity
+            </h2>
             {studentId ? (
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
                 <ShieldCheck aria-hidden="true" className="size-3.5" />
@@ -36,12 +39,15 @@ export function StudentIdentitySelector() {
               </span>
             ) : null}
           </div>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
             Use your 17-digit birth registration number to view and manage your applications.
           </p>
         </div>
       </div>
-      <form className="flex flex-col gap-4 md:flex-row md:items-end" onSubmit={handleSubmit}>
+      <form
+        className="relative flex flex-col gap-4 md:flex-row md:items-end"
+        onSubmit={handleSubmit}
+      >
         <div className="min-w-0 flex-1">
           <Input
             autoComplete="off"

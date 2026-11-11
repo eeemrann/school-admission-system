@@ -114,6 +114,30 @@ describe("StudentClassesPage admission creation", () => {
     expect(button).toBeDisabled();
   });
 
+  it("filters the student catalogue to classes with seats", async () => {
+    const fullClass = {
+      ...availableClass,
+      id: "c_full",
+      name: "Class 5 - Full",
+      availableSeats: 0,
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([availableClass, fullClass])));
+    renderWithProviders(
+      <MemoryRouter>
+        <StudentClassesPage />
+      </MemoryRouter>,
+      { studentId: "20152691234560049" },
+    );
+
+    await screen.findByText("Class 5 - Full");
+    fireEvent.change(screen.getByRole("combobox", { name: "Filter classes" }), {
+      target: { value: "available" },
+    });
+
+    expect(screen.getByText("Class 6 - Morning Shift")).toBeInTheDocument();
+    expect(screen.queryByText("Class 5 - Full")).not.toBeInTheDocument();
+  });
+
   it("requires a selected student identity before an application can be submitted", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse([availableClass]));
     vi.stubGlobal("fetch", fetchMock);

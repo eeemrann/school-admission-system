@@ -52,7 +52,8 @@ export function ReservationCountdown({
 
   return (
     <span
-      className={`inline-flex items-center gap-2 text-sm font-semibold ${isAuthoritativelyExpired ? "text-rose-700" : isChecking || reachedZero ? "text-amber-800" : "text-indigo-800"}`}
+      aria-label={`Reservation time: ${label}`}
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold ${isAuthoritativelyExpired ? "border-rose-200 bg-rose-50 text-rose-700" : isChecking || reachedZero ? "border-amber-200 bg-amber-50 text-amber-800" : "border-indigo-200 bg-indigo-50 text-indigo-800"}`}
       title="The server remains authoritative for reservation expiry"
     >
       <Clock3 aria-hidden="true" className="size-4" />

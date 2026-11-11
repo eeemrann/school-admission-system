@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   BookOpen,
   CheckCircle2,
+  CircleAlert,
   Clock3,
   Layers3,
   RefreshCw,
@@ -112,6 +113,8 @@ function DashboardContent({ classes }: { classes: readonly ClassSummary[] }) {
         </div>
       </section>
 
+      <OperationsPulse metrics={metrics} />
+
       <section
         aria-label="Capacity analysis"
         className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]"
@@ -215,7 +218,7 @@ function MetricCard({
 }) {
   return (
     <Card
-      className={`flex items-center gap-4 ${highlight ? "border-indigo-100 bg-brand-indigo-soft/45" : ""}`}
+      className={`flex items-center gap-4 ${highlight ? "border-indigo-100 bg-brand-indigo-soft/55" : "bg-white/85"}`}
     >
       <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-brand-indigo shadow-sm">
         <Icon aria-hidden="true" className="size-5" />
@@ -223,6 +226,46 @@ function MetricCard({
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{label}</p>
         <p className="mt-1 text-2xl font-bold tracking-tight text-slate-950">{value}</p>
+      </div>
+    </Card>
+  );
+}
+
+function OperationsPulse({ metrics }: { metrics: ReturnType<typeof deriveAdminMetrics> }) {
+  const isPressureHigh = metrics.utilizationPercent >= 85 || metrics.totalAvailableSeats <= 3;
+
+  return (
+    <Card
+      className={`overflow-hidden ${isPressureHigh ? "border-amber-200 bg-amber-50/80" : "border-emerald-200 bg-emerald-50/75"}`}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          {isPressureHigh ? (
+            <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-amber-700" />
+          ) : (
+            <CheckCircle2 aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-emerald-700" />
+          )}
+          <div>
+            <p
+              className={`text-sm font-extrabold ${isPressureHigh ? "text-amber-950" : "text-emerald-950"}`}
+            >
+              {isPressureHigh ? "Capacity needs attention" : "Capacity is in a healthy range"}
+            </p>
+            <p
+              className={`mt-1 text-sm leading-6 ${isPressureHigh ? "text-amber-900" : "text-emerald-900"}`}
+            >
+              {isPressureHigh
+                ? `${metrics.totalAvailableSeats} seat${metrics.totalAvailableSeats === 1 ? "" : "s"} remain across the current catalogue. Review the class register for the next action.`
+                : `${metrics.totalAvailableSeats} seats remain available across ${metrics.totalClasses} published offering${metrics.totalClasses === 1 ? "" : "s"}.`}
+            </p>
+          </div>
+        </div>
+        <Link
+          className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-brand-indigo hover:text-indigo-900"
+          to="/admin/classes"
+        >
+          Open class register <ArrowUpRight aria-hidden="true" className="size-4" />
+        </Link>
       </div>
     </Card>
   );

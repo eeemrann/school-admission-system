@@ -52,6 +52,23 @@ describe("AdminClassesPage", () => {
     expect(screen.getByText("Class 7 - Day Shift")).toBeInTheDocument();
   });
 
+  it("filters the class register by availability", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(classes)));
+    renderWithProviders(
+      <MemoryRouter>
+        <AdminClassesPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText("Class 6 - Morning Shift");
+    fireEvent.change(screen.getByRole("combobox", { name: "Filter class availability" }), {
+      target: { value: "full" },
+    });
+
+    expect(screen.queryByText("Class 6 - Morning Shift")).not.toBeInTheDocument();
+    expect(screen.getByText("No matching classes")).toBeInTheDocument();
+  });
+
   it("shows empty and API error states", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
     renderWithProviders(

@@ -23,16 +23,16 @@ const secondaryLinkClass =
 export function LandingPage() {
   return (
     <div className="-mx-4 overflow-hidden sm:-mx-6 lg:-mx-8">
-      <section className="relative overflow-hidden border-b border-brand-border bg-white">
-        <div className="pointer-events-none absolute -right-32 -top-44 size-[32rem] rounded-full bg-brand-indigo-soft/70 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-56 -left-40 size-[28rem] rounded-full bg-slate-100 blur-3xl" />
+      <section className="relative overflow-hidden border-b border-brand-border/80 bg-[radial-gradient(circle_at_78%_18%,rgba(224,231,255,0.9),transparent_36%),linear-gradient(135deg,#fff_0%,#f8fbff_55%,#eef2ff_100%)]">
+        <div className="pointer-events-none absolute -right-32 -top-44 size-[32rem] rounded-full border-[56px] border-indigo-100/40 blur-sm" />
+        <div className="pointer-events-none absolute -bottom-56 -left-40 size-[28rem] rounded-full bg-indigo-100/35 blur-3xl" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1fr_0.85fr] lg:gap-16 lg:px-8 lg:py-28">
           <div>
-            <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-brand-indigo-soft px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-indigo">
+            <p className="eyebrow mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-3 py-1.5 text-[10px] font-bold text-brand-indigo shadow-sm">
               <span aria-hidden="true" className="size-1.5 rounded-full bg-brand-indigo" />
               School admission platform
             </p>
-            <h1 className="max-w-3xl text-4xl font-bold tracking-[-0.04em] text-brand-navy sm:text-6xl sm:leading-[1.06] lg:text-[4.25rem]">
+            <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.02] tracking-[-0.05em] text-brand-navy sm:text-6xl lg:text-[4.3rem]">
               A clearer path to your next school admission.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
@@ -55,6 +55,18 @@ export function LandingPage() {
           </div>
 
           <AdmissionJourney />
+        </div>
+      </section>
+
+      <section aria-label="Platform signals" className="border-b border-brand-border/80 bg-white">
+        <div className="mx-auto grid max-w-7xl divide-y divide-brand-border/70 px-4 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:px-6 lg:px-8">
+          <Signal value="Live" label="availability from the admission API" tone="indigo" />
+          <Signal
+            value="Time-boxed"
+            label="reservation windows for confident decisions"
+            tone="emerald"
+          />
+          <Signal value="1 place" label="one clear application history" tone="amber" />
         </div>
       </section>
 
@@ -181,7 +193,8 @@ function AdmissionJourney() {
   ];
 
   return (
-    <div className="relative rounded-2xl bg-brand-navy p-6 text-white shadow-[0_20px_48px_rgba(11,31,58,0.18)] sm:p-8">
+    <div className="relative overflow-hidden rounded-[1.75rem] bg-brand-navy p-6 text-white shadow-[0_24px_60px_rgba(16,42,67,0.24)] sm:p-8">
+      <div className="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full border-[42px] border-indigo-300/10" />
       <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-200">
@@ -213,6 +226,36 @@ function AdmissionJourney() {
         <CheckCircle2 aria-hidden="true" className="size-4 shrink-0 text-emerald-300" />
         Seat availability and application status remain backed by the API.
       </div>
+      <div className="mt-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-[11px] font-semibold text-slate-300">
+        <span>Workflow status</span>
+        <span className="inline-flex items-center gap-1.5 text-emerald-200">
+          <span aria-hidden="true" className="size-1.5 rounded-full bg-emerald-300" />
+          Ready to begin
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Signal({
+  value,
+  label,
+  tone,
+}: {
+  value: string;
+  label: string;
+  tone: "indigo" | "emerald" | "amber";
+}) {
+  const valueClass = {
+    indigo: "text-brand-indigo",
+    emerald: "text-emerald-700",
+    amber: "text-amber-700",
+  }[tone];
+
+  return (
+    <div className="flex items-center gap-4 px-0 py-5 sm:px-8 sm:py-6 first:sm:pl-0 last:sm:pr-0">
+      <p className={`text-2xl font-extrabold tracking-[-0.04em] ${valueClass}`}>{value}</p>
+      <p className="max-w-44 text-xs font-semibold leading-5 text-slate-500">{label}</p>
     </div>
   );
 }

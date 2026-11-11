@@ -1,7 +1,8 @@
-import { ArrowLeft, BookOpen, CheckCircle2, Clock3, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, Clock3, RefreshCw, Users } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge";
+import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { ErrorState } from "../../../components/ui/ErrorState";
@@ -23,13 +24,24 @@ export function AdminClassDetailsPage() {
         eyebrow="Class details"
         title={classQuery.data?.name ?? "Class details"}
         actions={
-          <Link
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-            to="/admin/classes"
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            All classes
-          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              disabled={classQuery.isFetching}
+              isLoading={classQuery.isFetching}
+              variant="secondary"
+              onClick={() => void classQuery.refetch()}
+            >
+              <RefreshCw aria-hidden="true" className="size-4" />
+              Refresh
+            </Button>
+            <Link
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              to="/admin/classes"
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              All classes
+            </Link>
+          </div>
         }
       />
       {!classId ? (
@@ -59,23 +71,22 @@ function ClassDetails({ admissionClass }: { admissionClass: ClassSummary }) {
 
   return (
     <>
-      <Card className="border-indigo-100 bg-brand-indigo-soft/60">
+      <Card className="relative overflow-hidden border-indigo-100 bg-[radial-gradient(circle_at_90%_10%,rgba(165,180,252,0.55),transparent_34%),linear-gradient(135deg,#eef2ff,#f8fbff)]">
+        <div className="pointer-events-none absolute -bottom-16 -right-8 size-48 rounded-full border-[28px] border-white/70" />
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex gap-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white text-indigo-700 shadow-sm">
+          <div className="relative flex gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-white text-indigo-700 shadow-[0_8px_18px_rgba(79,70,229,0.12)]">
               <BookOpen aria-hidden="true" className="size-6" />
             </span>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">
-                Published offering
-              </p>
+              <p className="eyebrow text-[10px] font-bold text-indigo-700">Published offering</p>
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
                 {admissionClass.name}
               </h2>
               <p className="mt-2 font-mono text-xs text-slate-600">{admissionClass.id}</p>
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-start gap-2 rounded-2xl bg-white p-4 shadow-sm sm:items-end">
+          <div className="relative flex shrink-0 flex-col items-start gap-2 rounded-2xl border border-white/80 bg-white/85 p-4 shadow-sm sm:items-end">
             <Badge
               tone={
                 admissionClass.availableSeats <= 0

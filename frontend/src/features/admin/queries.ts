@@ -12,6 +12,7 @@ export function useAdminClassesQuery() {
   return useQuery({
     queryKey: adminClassesQueryKey,
     queryFn: ({ signal }) => getApiClient().listClasses(signal),
+    refetchInterval: 10_000,
   });
 }
 
@@ -20,6 +21,7 @@ export function useAdminClassQuery(classId: string, enabled = true) {
     queryKey: adminClassQueryKey(classId),
     queryFn: ({ signal }) => getApiClient().getClass(classId, signal),
     enabled,
+    refetchInterval: enabled ? 10_000 : false,
   });
 }
 

@@ -8,8 +8,9 @@ interface BadgeProps {
 export function Badge({ children, tone = "neutral" }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold tracking-wide ${badgeTones[tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold tracking-wide ${badgeTones[tone]}`}
     >
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-70" />
       {children}
     </span>
   );
@@ -29,9 +30,9 @@ export function StatusBadge({ status }: { status: HoldStatus }) {
 }
 
 const badgeTones: Record<NonNullable<BadgeProps["tone"]>, string> = {
-  neutral: "bg-slate-100 text-slate-700",
-  success: "bg-brand-success-soft text-brand-success",
-  warning: "bg-brand-warning-soft text-brand-warning",
-  danger: "bg-brand-danger-soft text-brand-danger",
-  info: "bg-brand-indigo-soft text-brand-indigo",
+  neutral: "border-slate-200 bg-slate-100 text-slate-700",
+  success: "border-emerald-200/80 bg-brand-success-soft text-brand-success",
+  warning: "border-amber-200/80 bg-brand-warning-soft text-brand-warning",
+  danger: "border-rose-200/80 bg-brand-danger-soft text-brand-danger",
+  info: "border-indigo-100 bg-brand-indigo-soft text-brand-indigo",
 };

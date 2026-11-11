@@ -1,4 +1,4 @@
-import { ClipboardList, RefreshCw } from "lucide-react";
+import { CheckCircle2, ClipboardList, Clock3, RefreshCw } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Badge, StatusBadge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
@@ -60,27 +60,78 @@ export function StudentApplicationsPage() {
           title="No applications yet"
         />
       ) : applicationsQuery.isSuccess ? (
-        <Card className="space-y-4 p-4 sm:p-6">
-          <div className="flex flex-col gap-3 border-b border-brand-border pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-bold text-slate-950">Application timeline</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Statuses and reservation windows are read from the API.
-              </p>
+        <>
+          <ApplicationSummary applications={applicationsQuery.data} />
+          <Card className="space-y-4 p-4 sm:p-6">
+            <div className="flex flex-col gap-3 border-b border-brand-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="font-bold text-slate-950">Application timeline</h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Statuses and reservation windows are read from the API.
+                </p>
+              </div>
+              <Badge tone="info">{`${applicationsQuery.data.length} total`}</Badge>
             </div>
-            <Badge tone="info">{`${applicationsQuery.data.length} total`}</Badge>
-          </div>
-          <div className="grid gap-4">
-            {applicationsQuery.data.map((application) => (
-              <ApplicationRow
-                application={application}
-                key={application.holdId}
-                studentId={studentId ?? ""}
-              />
-            ))}
-          </div>
-        </Card>
+            <div className="grid gap-4">
+              {applicationsQuery.data.map((application) => (
+                <ApplicationRow
+                  application={application}
+                  key={application.holdId}
+                  studentId={studentId ?? ""}
+                />
+              ))}
+            </div>
+          </Card>
+        </>
       ) : null}
+    </div>
+  );
+}
+
+function ApplicationSummary({ applications }: { applications: readonly ApplicationHistoryItem[] }) {
+  const active = applications.filter((application) => application.status === "HELD").length;
+  const confirmed = applications.filter((application) => application.status === "CONFIRMED").length;
+
+  return (
+    <section aria-label="Application summary" className="grid gap-3 sm:grid-cols-3">
+      <SummaryCard icon={ClipboardList} label="Total applications" value={applications.length} />
+      <SummaryCard icon={Clock3} label="Awaiting confirmation" value={active} tone="warning" />
+      <SummaryCard
+        icon={CheckCircle2}
+        label="Confirmed admissions"
+        value={confirmed}
+        tone="success"
+      />
+    </section>
+  );
+}
+
+function SummaryCard({
+  icon: Icon,
+  label,
+  tone = "neutral",
+  value,
+}: {
+  icon: typeof ClipboardList;
+  label: string;
+  tone?: "neutral" | "warning" | "success";
+  value: number;
+}) {
+  const toneClasses = {
+    neutral: "border-brand-border bg-white text-brand-indigo",
+    warning: "border-amber-200/80 bg-amber-50/70 text-amber-700",
+    success: "border-emerald-200/80 bg-emerald-50/70 text-emerald-700",
+  }[tone];
+
+  return (
+    <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 ${toneClasses}`}>
+      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/80 shadow-sm">
+        <Icon aria-hidden="true" className="size-4" />
+      </span>
+      <div>
+        <p className="text-xl font-extrabold tracking-tight">{value}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">{label}</p>
+      </div>
     </div>
   );
 }
@@ -152,7 +203,7 @@ function ApplicationRow({
   return (
     <article
       aria-label={`${status} application for ${application.className}`}
-      className="rounded-2xl border border-brand-border bg-white p-4 shadow-[0_4px_18px_rgba(15,23,42,0.04)] sm:p-5"
+      className={`rounded-2xl border bg-white p-4 shadow-[0_4px_18px_rgba(16,42,67,0.04)] sm:p-5 ${status === "HELD" ? "border-indigo-200/80 shadow-[0_8px_24px_rgba(79,70,229,0.08)]" : "border-brand-border"}`}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">

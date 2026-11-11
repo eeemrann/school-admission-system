@@ -24,11 +24,11 @@ export function CapacityBar({
         aria-valuemax={100}
         aria-valuemin={0}
         aria-valuenow={percent}
-        className="h-2.5 overflow-hidden rounded-full bg-slate-200"
+        className="h-2.5 overflow-hidden rounded-full bg-slate-200/80"
         role="progressbar"
       >
         <div
-          className="h-full rounded-full bg-brand-indigo transition-[width]"
+          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-[width]"
           style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
         />
       </div>

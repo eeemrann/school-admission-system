@@ -7,8 +7,12 @@ export function getErrorMessage(error: unknown): string {
   }
 
   if (error instanceof ApiError) {
+    const detail = error.problem.detail?.trim();
     return (
-      error.message || apiCodeMessages[error.code ?? ""] || "The request could not be completed."
+      detail ||
+      apiCodeMessages[error.code ?? ""] ||
+      error.problem.title ||
+      "The request could not be completed."
     );
   }
 
